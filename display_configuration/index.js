@@ -859,6 +859,7 @@ display_configuration.prototype.applyscreensettings = async function () {
 
    await this.applyRotation();
    await this.applyTouchCorrection();
+   await this.applyPointerCorrection();
    this.applyCursorSetting();
    self.setBrightness();
 
@@ -1037,6 +1038,61 @@ display_configuration.prototype.detectTouchInversion = async function (devId, sc
    return { invertX, invertY };
 };
 
+display_configuration.prototype.applyPointerCorrection = async function () {
+  const self = this;
+  const display = self.getDisplaynumber();
+
+  // simple async exec helper (no promisify)
+  const execCmd = (cmd) =>
+    new Promise((resolve, reject) => {
+      exec(cmd, (error, stdout, stderr) => {
+        if (error) {
+          self.logger.error(`${logPrefix} exec error: ${stderr || error.message}`);
+          return reject(error);
+        }
+        resolve(stdout.trim());
+      });
+    });
+
+  try {
+    const screen = await self.detectConnectedScreen();
+    if (!screen) {
+      self.logger.warn(`${logPrefix} No active screen found, skipping pointer correction.`);
+      return;
+    }
+
+    const pointerDevices = await execCmd(`DISPLAY=${display} xinput list --name-only | grep -i mouse || true`);
+    if (!pointerDevices) {
+      self.logger.info(`${logPrefix} No pointer (mouse) devices detected.`);
+      return;
+    }
+
+    const deviceNames = pointerDevices.split("\n").filter(Boolean);
+    for (const name of deviceNames) {
+      try {
+        const idMatch = await execCmd(`DISPLAY=${display} xinput list | grep -F "${name}" | grep -o "id=[0-9]*"`);
+        const id = idMatch.replace("id=", "").trim();
+
+        // Align mouse coordinate transformation with screen orientation
+        const rotatescreen = self.config.get("rotatescreen")?.value || "normal";
+        const matrixMap = {
+          normal:   "1 0 0  0 1 0  0 0 1",
+          inverted: "-1 0 1  0 -1 1  0 0 1",
+          left:     "0 -1 1  1 0 0  0 0 1",
+          right:    "0 1 0  -1 0 1  0 0 1"
+        };
+        const matrix = matrixMap[rotatescreen] || matrixMap.normal;
+
+        await execCmd(`DISPLAY=${display} xinput set-prop ${id} "Coordinate Transformation Matrix" ${matrix}`);
+        self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) → ${rotatescreen}`);
+      } catch (err) {
+        self.logger.warn(`${logPrefix} Failed to correct pointer ${name}: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    self.logger.error(`${logPrefix} applyPointerCorrection error: ${err.message}`);
+  }
+};
 
 // 2. rotate touchsscreenn
 display_configuration.prototype.applyTouchCorrection = async function () {
