@@ -174,17 +174,6 @@
           "label": "TRANSLATE.NO_SS_IF_PLAY",
           "doc": "TRANSLATE.NO_SS_IF_PLAY_DOC",
           "value": true
-        },
-        {
-          "id": "generate_diagnostics",
-          "element": "button",
-          "label": "Generate Diagnostic Report",
-          "doc": "Creates /tmp/volumio-display-diagnostics.txt for troubleshooting. Use this to help debug display issues.",
-          "onClick": {
-            "type": "plugin",
-            "endpoint": "user_interface/display_configuration",
-            "method": "generateDiagnostics"
-          }
         }
       ]
     }

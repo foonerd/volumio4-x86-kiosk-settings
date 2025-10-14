@@ -414,11 +414,11 @@ display_configuration.prototype.monitorLid = function () {
 
          if (anyClosed && !lidClosed) {
             lidClosed = true;
-            self.logger.info(logPrefix + " Lid closed - turning screen off via DPMS");
+            self.logger.info(logPrefix + " Lid closed — turning screen off via DPMS");
             exec(`/usr/bin/xset -display ${display} dpms force off`);
          } else if (!anyClosed && lidClosed) {
             lidClosed = false;
-            self.logger.info(logPrefix + " Lid opened - turning screen on via DPMS");
+            self.logger.info(logPrefix + " Lid opened — turning screen on via DPMS");
             exec(`/usr/bin/xset -display ${display} dpms force on`);
          }
       } catch (err) {
@@ -443,13 +443,13 @@ display_configuration.prototype.checkIfPlay = function () {
       self.logger.info(logPrefix + " xscreensaver cleaned up before starting");
    });
 
-   // Start xscreensaver immediately if selected
+   // 🔹 Start xscreensaver immediately if selected
    const screensavertype = self.config.get("screensavertype").value;
    if (screensavertype === "xscreensaver") {
       self.ensureXscreensaver();
    }
 
-   // Listen for Volumio playback state
+   // 🎵 Listen for Volumio playback state
    self.socket.on("pushState", function (data) {
       const timeout = self.config.get("timeout") || 0;
       const noifplay = self.config.get("noifplay");
@@ -462,7 +462,7 @@ display_configuration.prototype.checkIfPlay = function () {
       // ---- Wake conditions ----
       if ((data.status === "play" && noifplay) || timeout === 0 && screensavertype === "dpms") {
          self.wakeupScreen();
-         self.logger.info(`${logPrefix} -> Wakeup triggered`);
+         self.logger.info(`${logPrefix} → Wakeup triggered`);
          return;
       }
 
@@ -471,7 +471,7 @@ display_configuration.prototype.checkIfPlay = function () {
          setTimeout(() => {
             if (self.lastState !== "play") {
                self.sleepScreen();
-               self.logger.info(`${logPrefix} -> Sleep (DPMS) triggered after ${timeout}s`);
+               self.logger.info(`${logPrefix} → Sleep (DPMS) triggered after ${timeout}s`);
             }
          }, timeout * 1000);
          return;
@@ -480,11 +480,11 @@ display_configuration.prototype.checkIfPlay = function () {
       // ---- Sleep (xscreensaver) ----
       if (data.status !== "play" && screensavertype === "xscreensaver") {
          self.sleepScreen();
-         self.logger.info(`${logPrefix} -> Sleep (xscreensaver) triggered`);
+         self.logger.info(`${logPrefix} → Sleep (xscreensaver) triggered`);
          return;
       }
 
-      self.logger.info(`${logPrefix} -> No action taken`);
+      self.logger.info(`${logPrefix} → No action taken`);
    });
 };
 display_configuration.prototype.sleepScreen = function () {
@@ -497,7 +497,7 @@ display_configuration.prototype.sleepScreen = function () {
       if (screensavertype === "dpms") {
          // Put screen to sleep via DPMS
          exec(`/usr/bin/xset -display ${display} s 0 0 +dpms dpms 0 0 ${timeout}`);
-         self.logger.info(logPrefix + " sleepScreen: DPMS -> screen off in " + timeout + "s");
+         self.logger.info(logPrefix + " sleepScreen: DPMS → screen off in " + timeout + "s");
 
       } else if (screensavertype === "xscreensaver") {
          // stop keepalive when we want xscreensaver active
@@ -509,14 +509,14 @@ display_configuration.prototype.sleepScreen = function () {
          // Ensure xscreensaver daemon is running
          exec(`pgrep xscreensaver || (DISPLAY=${display} xscreensaver -no-splash &)`, (error) => {
             if (error) {
-               self.logger.error(logPrefix + " sleepScreen: failed to ensure xscreensaver is running -> " + error);
+               self.logger.error(logPrefix + " sleepScreen: failed to ensure xscreensaver is running → " + error);
             }
          });
 
          // Then activate the screensaver
          exec(`DISPLAY=${display} xscreensaver-command -activate`, (error) => {
             if (error) {
-               self.logger.warn(logPrefix + " sleepScreen: xscreensaver not running or failed -> " + error.message);
+               self.logger.warn(logPrefix + " sleepScreen: xscreensaver not running or failed → " + error.message);
                return;
             }
             self.logger.info(logPrefix + " sleepScreen: xscreensaver activated (screen blanked)");
@@ -540,13 +540,13 @@ display_configuration.prototype.wakeupScreen = function () {
 
          // Wake DPMS screen
          exec(`/usr/bin/xset -display ${display} -dpms`);
-         self.logger.info(logPrefix + " wakeupScreen: DPMS -> screen on");
+         self.logger.info(logPrefix + " wakeupScreen: DPMS → screen on");
 
       } else if (screensavertype === "xscreensaver") {
          // tell xscreensaver to disable blanking (instead of killing)
          exec(`DISPLAY=${display} xscreensaver-command -deactivate`, (error) => {
             if (error) {
-               self.logger.error(logPrefix + " wakeupScreen: Failed to deactivate xscreensaver -> " + error);
+               self.logger.error(logPrefix + " wakeupScreen: Failed to deactivate xscreensaver → " + error);
             } else {
                self.logger.info(logPrefix + " wakeupScreen: xscreensaver deactivated (screen on)");
             }
@@ -557,14 +557,14 @@ display_configuration.prototype.wakeupScreen = function () {
             self._xscreensaverInterval = setInterval(() => {
                exec(`pgrep -x xscreensaver`, (checkErr, stdout) => {
                   if (checkErr || !stdout) {
-                     // Not running - skip silently
+                     // Not running → skip silently
                      self.logger.debug(logPrefix + " keepAlive: xscreensaver not running, skipping deactivate");
                      return;
                   }
 
                   exec(`DISPLAY=${display} xscreensaver-command -deactivate`, (error) => {
                      if (error) {
-                        self.logger.warn(logPrefix + " keepAlive: xscreensaver deactivate failed -> " + error.message);
+                        self.logger.warn(logPrefix + " keepAlive: xscreensaver deactivate failed → " + error.message);
                      } else {
                         self.logger.debug(logPrefix + " keepAlive: xscreensaver deactivated");
                      }
@@ -606,7 +606,7 @@ display_configuration.prototype.xscreensettings = function (data) {
          // 3. Deactivate so the screen is "on" when settings open
          exec(`DISPLAY=${display} xscreensaver-command -deactivate`, (error) => {
             if (error) {
-               self.logger.warn(logPrefix + " xscreensettings: Failed to deactivate xscreensaver -> " + error);
+               self.logger.warn(logPrefix + " xscreensettings: Failed to deactivate xscreensaver → " + error);
             } else {
                self.logger.info(logPrefix + " xscreensettings: xscreensaver deactivated (screen on)");
             }
@@ -811,7 +811,7 @@ display_configuration.prototype.applyscreensettingsboot = async function () {
 
    if (this.drmForcesOrientation) {
       self.logger.warn(
-         logPrefix + ` Kernel already forces orientation -> skipping xrandr`
+         logPrefix + ` Kernel already forces orientation → skipping xrandr`
       );
    } else {
       await this.applyRotation();
@@ -924,7 +924,7 @@ display_configuration.prototype.applyRotation = async function () {
       }
 
       self.logger.warn(
-         logPrefix + ` Kernel forces orientation for ${screen} -> adjusting xrandr fake orientation`
+         logPrefix + ` Kernel forces orientation for ${screen} → adjusting xrandr fake orientation`
       );
    }
 
@@ -1040,10 +1040,6 @@ display_configuration.prototype.getTouchSamples = function (devId, count = 2, ti
       } // for lines
     });
 
-   // If touching near left - reported near max X - inverted
-   if (touch.x > geom.width * 0.8) invertX = true;
-   // If touching near top - reported near max Y - inverted
-   if (touch.y > geom.height * 0.8) invertY = true;
     child.stderr.on('data', data => {
       // many drivers print warnings on stderr — log but do not fail
       self.logger.debug(logPrefix + ' getTouchSamples stderr: ' + data.toString().trim());
@@ -1128,7 +1124,7 @@ display_configuration.prototype.applyPointerCorrection = async function () {
   const self = this;
   const display = self.getDisplaynumber();
 
-  // simple async exec helper with proper error handling
+  // simple async exec helper (no promisify)
   const execCmd = (cmd) =>
     new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
@@ -1147,69 +1143,32 @@ display_configuration.prototype.applyPointerCorrection = async function () {
       return;
     }
 
-    // FIXED: Detect ALL pointer devices, not just "mouse"
-    // This catches: "Virtual core pointer", trackpoint, trackball, etc
-    const allDevices = await execCmd(`DISPLAY=${display} xinput list --name-only || true`);
-    if (!allDevices) {
-      self.logger.info(`${logPrefix} No input devices detected.`);
+    const pointerDevices = await execCmd(`DISPLAY=${display} xinput list --name-only | grep -i mouse || true`);
+    if (!pointerDevices) {
+      self.logger.info(`${logPrefix} No pointer (mouse) devices detected.`);
       return;
     }
 
-    const deviceNames = allDevices.split("\n").filter(Boolean);
-    const pointerDevices = [];
-
-    // Identify pointer devices by checking their properties
+    const deviceNames = pointerDevices.split("\n").filter(Boolean);
     for (const name of deviceNames) {
       try {
-        // Skip virtual devices and keyboards
-        if (name.match(/keyboard|XTEST|Virtual core|Power Button/i)) {
-          continue;
-        }
-
-        const idMatch = await execCmd(`DISPLAY=${display} xinput list | grep -F "${name}" | grep -o "id=[0-9]*" || true`);
-        if (!idMatch) continue;
-        
+        const idMatch = await execCmd(`DISPLAY=${display} xinput list | grep -F "${name}" | grep -o "id=[0-9]*"`);
         const id = idMatch.replace("id=", "").trim();
 
-        // Check if device has pointer capability (button or relative motion)
-        const propsOutput = await execCmd(`DISPLAY=${display} xinput list-props ${id} || true`);
-        
-        // Device is a pointer if it has buttons or relative axes and is NOT a touchscreen
-        const isPointer = propsOutput.match(/Button|Rel X|Rel Y/i) && 
-                         !propsOutput.match(/Touch/i);
-        
-        if (isPointer) {
-          pointerDevices.push({ name, id });
-        }
+        // Align mouse coordinate transformation with screen orientation
+        const rotatescreen = self.config.get("rotatescreen")?.value || "normal";
+        const matrixMap = {
+          normal:   "1 0 0  0 1 0  0 0 1",
+          inverted: "-1 0 1  0 -1 1  0 0 1",
+          left:     "0 -1 1  1 0 0  0 0 1",
+          right:    "0 1 0  -1 0 1  0 0 1"
+        };
+        const matrix = matrixMap[rotatescreen] || matrixMap.normal;
+
+        await execCmd(`DISPLAY=${display} xinput set-prop ${id} "Coordinate Transformation Matrix" ${matrix}`);
+        self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) → ${rotatescreen}`);
       } catch (err) {
-        // Skip devices that error
-        continue;
-      }
-    }
-
-    if (pointerDevices.length === 0) {
-      self.logger.info(`${logPrefix} No pointer devices detected.`);
-      return;
-    }
-
-    self.logger.info(`${logPrefix} Found ${pointerDevices.length} pointer device(s): ${pointerDevices.map(d => d.name).join(', ')}`);
-
-    // Apply transformation to each pointer device
-    const rotatescreen = self.config.get("rotatescreen")?.value || "normal";
-    const matrixMap = {
-      normal:   "1 0 0  0 1 0  0 0 1",
-      inverted: "-1 0 1  0 -1 1  0 0 1",
-      left:     "0 -1 1  1 0 0  0 0 1",
-      right:    "0 1 0  -1 0 1  0 0 1"
-    };
-    const matrix = matrixMap[rotatescreen] || matrixMap.normal;
-
-    for (const device of pointerDevices) {
-      try {
-        await execCmd(`DISPLAY=${display} xinput set-prop ${device.id} "Coordinate Transformation Matrix" ${matrix}`);
-        self.logger.info(`${logPrefix} Pointer correction applied to ${device.name} (id=${device.id}) -> ${rotatescreen}`);
-      } catch (err) {
-        self.logger.warn(`${logPrefix} Failed to correct pointer ${device.name}: ${err.message}`);
+        self.logger.warn(`${logPrefix} Failed to correct pointer ${name}: ${err.message}`);
       }
     }
   } catch (err) {
@@ -1281,7 +1240,7 @@ display_configuration.prototype.applyTouchCorrection = async function () {
                   await runCommand(`DISPLAY=${display} xinput --map-to-output ${dev.id} ${screen}`);
                   mappedObj[devKey] = screen;
                   self.config.set("touch_mapped_output", mappedObj);
-                  self.logger.info(`${logPrefix} Mapped ${dev.name} (id=${dev.id}) -> ${screen} and saved mapping`);
+                  self.logger.info(`${logPrefix} Mapped ${dev.name} (id=${dev.id}) → ${screen} and saved mapping`);
                } else {
                   self.logger.info(`${logPrefix} ${dev.name} (id=${dev.id}) already mapped to ${screen}`);
                }
@@ -1318,20 +1277,20 @@ display_configuration.prototype.applyTouchCorrection = async function () {
                // 5) apply final matrix
                try {
                   await runCommand(`DISPLAY=${display} xinput set-prop ${dev.id} "Coordinate Transformation Matrix" ${matrixStr}`);
-                  self.logger.info(`${logPrefix} Auto correction applied to ${dev.name} (id=${dev.id}) -> matrix=${matrixStr}`);
+                  self.logger.info(`${logPrefix} Auto correction applied to ${dev.name} (id=${dev.id}) → matrix=${matrixStr}`);
                } catch (e) {
                   // fallback: warn but keep map-to-output (mapping preserved)
                   self.logger.warn(`${logPrefix} Failed to apply matrix to ${dev.name} (id=${dev.id}). Mapping kept. Error: ${e.message}`);
                }
 
             } else {
-               // Manual modes - still map to output if we have previous mapping or prefer to map always for touchpad/touchscreen
+               // Manual modes — still map to output if we have previous mapping or prefer to map always for touchpad/touchscreen
                if (mappedObj[devKey] !== screen) {
                   // optional: map once even in manual mode (keeps input confined to screen)
                   await runCommand(`DISPLAY=${display} xinput --map-to-output ${dev.id} ${screen}`);
                   mappedObj[devKey] = screen;
                   self.config.set("touch_mapped_output", mappedObj);
-                  self.logger.info(`${logPrefix} (manual) Mapped ${dev.name} (id=${dev.id}) -> ${screen}`);
+                  self.logger.info(`${logPrefix} (manual) Mapped ${dev.name} (id=${dev.id}) → ${screen}`);
                }
 
                // Manual matrix selection
@@ -1346,7 +1305,7 @@ display_configuration.prototype.applyTouchCorrection = async function () {
                await runCommand(
                   `DISPLAY=${display} xinput set-prop ${dev.id} "Coordinate Transformation Matrix" ${matrix}`
                );
-               self.logger.info(`${logPrefix} Manual correction applied: ${touchcorrection} -> ${dev.name} (id=${dev.id})`);
+               self.logger.info(`${logPrefix} Manual correction applied: ${touchcorrection} → ${dev.name} (id=${dev.id})`);
             }
 
          } catch (err) {
@@ -1387,77 +1346,4 @@ display_configuration.prototype.applyCursorSetting = function () {
    } catch (err) {
       self.logger.error(logPrefix + " applyCursorSetting error: " + err);
    }
-};
-
-// NEW: Generate diagnostic report
-display_configuration.prototype.generateDiagnostics = function() {
-  const self = this;
-  const defer = libQ.defer();
-  
-  const diagnosticFile = '/tmp/volumio-display-diagnostics.txt';
-  const commands = [
-    'echo "=== VOLUMIO DISPLAY DIAGNOSTICS ==="',
-    'echo "Generated: $(date)"',
-    'echo ""',
-    'echo "=== SYSTEM INFO ==="',
-    'echo "Vendor: $(cat /sys/class/dmi/id/sys_vendor 2>&1 || echo N/A)"',
-    'echo "Product: $(cat /sys/class/dmi/id/product_name 2>&1 || echo N/A)"',
-    'echo "Kernel: $(uname -r)"',
-    'echo ""',
-    'echo "=== KERNEL CMDLINE ==="',
-    'cat /proc/cmdline',
-    'echo ""',
-    'echo "=== DRM CONNECTORS ==="',
-    'for conn in /sys/class/drm/card*/card*/status; do echo "$conn: $(cat $conn 2>&1)"; done',
-    'echo ""',
-    'echo "=== PANEL ORIENTATION ==="',
-    'for orient in /sys/class/drm/*/panel_orientation; do [ -f "$orient" ] && echo "$orient: $(cat $orient 2>&1)"; done || echo "No panel_orientation found"',
-    'echo ""',
-    'echo "=== FBCON ROTATE ==="',
-    'cat /sys/class/graphics/fbcon/rotate 2>&1 || echo "fbcon not available"',
-    'echo ""',
-    'echo "=== XRANDR OUTPUT ==="',
-    'DISPLAY=:0 xrandr --verbose 2>&1 || echo "xrandr failed"',
-    'echo ""',
-    'echo "=== INPUT DEVICES ==="',
-    'DISPLAY=:0 xinput list 2>&1 || echo "xinput failed"',
-    'echo ""',
-    'echo "=== INPUT DEVICE PROPERTIES (first 3 devices) ==="',
-    'DISPLAY=:0 xinput list | grep -o "id=[0-9]*" | head -3 | while read id; do devid=$(echo $id | cut -d= -f2); echo "--- Device $devid ---"; DISPLAY=:0 xinput list-props $devid 2>&1; done || echo "xinput props failed"',
-    'echo ""',
-    'echo "=== DMESG ROTATION/DRM ==="',
-    'dmesg | grep -iE "panel_orientation|drm.*orientation|video=|fbcon" | tail -20',
-    'echo ""',
-    'echo "=== PLUGIN CONFIG ==="',
-    'cat /data/configuration/user_interface/display_configuration/config.json 2>&1 || echo "Config not found"',
-    'echo ""',
-    'echo "=== ROTATION CFG ==="',
-    'cat /data/plugins/user_interface/display_configuration/rotation.cfg 2>&1 || echo "rotation.cfg not found"',
-    'echo ""',
-    'echo "=== GRUB CONFIG CHECK ==="',
-    'grep -A5 -B5 volumio /boot/grub/grub.cfg 2>&1 || echo "No volumio entries in grub.cfg"',
-    'echo ""',
-    'echo "=== X11 CONFIG FILES ==="',
-    'ls -la /etc/X11/xorg.conf.d/*volumio* 2>&1 || echo "No volumio xorg configs found"',
-    'echo ""',
-    'echo "=== END DIAGNOSTICS ==="'
-  ];
-  
-  const cmd = commands.join(' && ') + ` > ${diagnosticFile} 2>&1`;
-  
-  exec(cmd, (error) => {
-    if (error) {
-      self.logger.error(logPrefix + ' Failed to generate diagnostics: ' + error);
-      self.commandRouter.pushToastMessage('error', 'Diagnostic Failed', 
-        'Could not generate diagnostic report');
-      defer.reject(error);
-    } else {
-      self.logger.info(logPrefix + ' Diagnostics saved to ' + diagnosticFile);
-      self.commandRouter.pushToastMessage('success', 'Diagnostics Generated',
-        'Report saved to ' + diagnosticFile);
-      defer.resolve();
-    }
-  });
-  
-  return defer.promise;
 };
