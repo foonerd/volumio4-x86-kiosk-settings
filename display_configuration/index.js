@@ -1,4 +1,4 @@
-//display_configuration - balbuze September 2025
+//display_configuration - balbuze October 2025
 'use strict';
 
 var libQ = require('kew');
@@ -582,34 +582,7 @@ display_configuration.prototype.wakeupScreen = function () {
    }
 };
 
-
-/*
 display_configuration.prototype.xscreensettings = function (data) {
-   const self = this;
-   const defer = libQ.defer();
-
-   const display = self.getDisplaynumber();
-
-   exec(`pkill -f xscreensaver-settings || true`);
-   exec("pkill -9 xscreensaver || true")
-
-   // exec(`DISPLAY=${display} xscreensaver-command -deactivate`);
-
-   const cmd = `DISPLAY=${display} xscreensaver-settings`;
-   exec(cmd, { uid: 1000, gid: 1000 }, (error, stdout, stderr) => {
-      if (error) {
-         self.logger.error(logPrefix + ": Failed to start xscreensaver-settings: " + error);
-         defer.reject(error);
-      } else {
-         self.logger.info(logPrefix + `: xscreensaver-settings started on display ${display}`);
-         defer.resolve();
-      }
-   });
-
-   return defer.promise;
-};
-
-*/display_configuration.prototype.xscreensettings = function (data) {
    const self = this;
    const defer = libQ.defer();
    const display = self.getDisplaynumber();
@@ -685,14 +658,11 @@ display_configuration.prototype.setBrightnessSoft = function () {
    }
 };
 
-//not use yet!!!! Needs to set backlight=native in grub.cfg
 display_configuration.prototype.setBrightness = function () {
 
    const self = this;
    const backlightDir = "/sys/class/backlight";
    var percent = self.config.get('brightness') * 100
-   //     self.logger.warn(logPrefix + " percent "+percent);
-
 
    return new Promise((resolve, reject) => {
       fs.readdir(backlightDir, (err, devices) => {
@@ -849,6 +819,7 @@ display_configuration.prototype.applyscreensettingsboot = async function () {
    }
 
    await this.applyTouchCorrection();
+   await this.applyPointerCorrection();
    this.applyCursorSetting();
    self.setBrightness();
 };
@@ -1001,42 +972,153 @@ async function getScreenGeometry(screen) {
    return { width: 0, height: 0 };
 }
 
-// Grab a single touch event (requires user tap)
-async function getSampleTouch(devId) {
-   try {
-      const cmd = `timeout 2 xinput test-xi2 ${devId} | grep -m1 "valuator"`;
-      const line = await runCommand(cmd);
-      const coords = line.match(/valuator\[0\]=([0-9.]+).*valuator\[1\]=([0-9.]+)/);
-      if (coords) {
-         return { x: parseFloat(coords[1]), y: parseFloat(coords[2]) };
+// Grab a single touch event (requires user tap)// helper: listen for N touch samples from xinput test-xi2 robustly
+display_configuration.prototype.getTouchSamples = function (devId, count = 2, timeoutMs = 120000) {
+  const self = this;
+  return new Promise((resolve, reject) => {
+    let samples = [];
+    let current = { x: undefined, y: undefined };
+    let finished = false;
+
+    // spawn test-xi2 which reports valuator[0], valuator[1] typically
+    const child = spawn('xinput', ['test-xi2', String(devId)]);
+    const timer = setTimeout(() => {
+      if (!finished) {
+        finished = true;
+        child.kill('SIGTERM');
+        if (samples.length > 0) return resolve(samples); // return partial if any
+        return reject(new Error('Timeout waiting for touch samples'));
       }
-   } catch {
-      return null;
-   }
-   return null;
-}
+    }, timeoutMs);
 
-// Detect if touchscreen axes are inverted vs. screen
-display_configuration.prototype.detectTouchInversion = async function (devId, screen) {
-   const geom = await getScreenGeometry(screen);
-   const touch = await getSampleTouch(devId);
+    // accumulate text because events may be split across chunks
+    let buffer = '';
 
-   if (!geom.width || !geom.height || !touch) {
-      this.logger.warn(logPrefix + " Could not detect inversion (missing geometry or touch).");
-      return { invertX: false, invertY: false };
-   }
+    child.stdout.on('data', chunk => {
+      buffer += chunk.toString();
+      // split into lines and keep remainder
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop(); // remainder
 
-   let invertX = false;
-   let invertY = false;
+      for (const line of lines) {
+        if (!line) continue;
 
-   // If touching near left → reported near max X → inverted
-   if (touch.x > geom.width * 0.8) invertX = true;
-   // If touching near top → reported near max Y → inverted
-   if (touch.y > geom.height * 0.8) invertY = true;
+        // Example lines to parse:
+        //   valuator[0]:  1234.00
+        //   valuator[1]:  567.00
+        // Or combined on same line depending on xinput version
+        const mv = line.match(/valuator\[(\d+)\]\s*:\s*([0-9.+-]+)/i);
+        if (mv) {
+          const idx = Number(mv[1]);
+          const val = parseFloat(mv[2]);
+          if (idx === 0) current.x = val;
+          if (idx === 1) current.y = val;
+          // don't push yet: wait for an event line (below) or for both valuators present
+        }
 
-   this.logger.info(logPrefix + ` Inversion detected: invertX=${invertX}, invertY=${invertY}`);
-   return { invertX, invertY };
+        // Look for an EVENT or Motion line indicating a finished sample
+        if (/EVENT type:.*(XI_TouchBegin|XI_TouchUpdate|XI_Motion|XI_ButtonPress|XI_ButtonRelease)/i.test(line)
+            || /TouchBegin|TouchUpdate|Motion|ButtonPress|ButtonRelease/i.test(line)) {
+          if (typeof current.x === 'number' && typeof current.y === 'number') {
+            samples.push({ x: current.x, y: current.y });
+            current = { x: undefined, y: undefined };
+          }
+        }
+
+        // fallback: if both x and y are present without an explicit EVENT line, accept them
+        if (typeof current.x === 'number' && typeof current.y === 'number') {
+          samples.push({ x: current.x, y: current.y });
+          current = { x: undefined, y: undefined };
+        }
+
+        if (samples.length >= count && !finished) {
+          finished = true;
+          clearTimeout(timer);
+          child.kill('SIGTERM');
+          return resolve(samples);
+        }
+      } // for lines
+    });
+
+    child.stderr.on('data', data => {
+      // many drivers print warnings on stderr — log but do not fail
+      self.logger.debug(logPrefix + ' getTouchSamples stderr: ' + data.toString().trim());
+    });
+
+    child.on('error', err => {
+      if (!finished) {
+        finished = true;
+        clearTimeout(timer);
+        reject(err);
+      }
+    });
+
+    child.on('exit', (code, sig) => {
+      if (!finished) {
+        finished = true;
+        clearTimeout(timer);
+        if (samples.length > 0) return resolve(samples);
+        return reject(new Error(`xinput exited early (code=${code} sig=${sig})`));
+      }
+    });
+  });
 };
+
+// helper: prompt user and capture two touches (top-left then bottom-right)
+display_configuration.prototype.detectTouchInversion = async function (devId, screen, deviceName) {
+  const self = this;
+
+  // get geometry (use existing getScreenGeometry function)
+  const geom = await getScreenGeometry(screen);
+  if (!geom || !geom.width || !geom.height) {
+    self.logger.warn(logPrefix + " Could not detect inversion (no geometry).");
+    return { invertX: false, invertY: false };
+  }
+
+  try {
+    // ask user to tap top-left
+    self.logger.info(`${logPrefix} Please touch TOP LEFT corner on ${deviceName || 'touch device'} (${screen})`);
+    const samples1 = await self.getTouchSamples(devId, 1, 20000); // wait up to 120s for first touch
+    if (!samples1 || samples1.length === 0) {
+      throw new Error('No top-left touch sample captured');
+    }
+    const topLeft = samples1[0];
+
+    // ask user to tap bottom-right
+    self.logger.info(`${logPrefix} Please touch BOTTOM RIGHT corner on ${deviceName || 'touch device'} (${screen})`);
+    const samples2 = await self.getTouchSamples(devId, 1, 20000); // wait up to 120s for second touch
+    if (!samples2 || samples2.length === 0) {
+      throw new Error('No bottom-right touch sample captured');
+    }
+    const bottomRight = samples2[0];
+
+    // Decide inversion:
+    // If user touched left but reported x is near width (i.e. large value) → invert X
+    // If user touched top but reported y is near height (i.e. large value) → invert Y
+    let invertX = false;
+    let invertY = false;
+
+    // topLeft.x expected near 0 (left). If > 80% of width -> inverted
+    if (typeof topLeft.x === 'number' && topLeft.x > geom.width * 0.8) invertX = true;
+    // topLeft.y expected near 0 (top). If > 80% of height -> inverted
+    if (typeof topLeft.y === 'number' && topLeft.y > geom.height * 0.8) invertY = true;
+
+    // secondary check using bottomRight values (robustness)
+    if (typeof bottomRight.x === 'number') {
+      if (!invertX && bottomRight.x < geom.width * 0.2) invertX = true; // bottom-right reported near left -> inverted
+    }
+    if (typeof bottomRight.y === 'number') {
+      if (!invertY && bottomRight.y < geom.height * 0.2) invertY = true; // bottom-right reported near top -> inverted
+    }
+
+    self.logger.info(logPrefix + ` Inversion detected for ${deviceName || devId}: invertX=${invertX}, invertY=${invertY}`);
+    return { invertX, invertY };
+  } catch (err) {
+    self.logger.error(logPrefix + ` Touch inversion detection failed: ${err.message}`);
+    return { invertX: false, invertY: false };
+  }
+};
+
 
 display_configuration.prototype.applyPointerCorrection = async function () {
   const self = this;
