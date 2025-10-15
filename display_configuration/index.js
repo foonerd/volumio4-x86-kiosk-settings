@@ -1347,3 +1347,89 @@ display_configuration.prototype.applyCursorSetting = function () {
       self.logger.error(logPrefix + " applyCursorSetting error: " + err);
    }
 };
+
+display_configuration.prototype.generateDiagnostics = function() {
+  const self = this;
+  const defer = libQ.defer();
+
+  const diagnosticFile = '/tmp/volumio-display-diagnostics.txt';
+
+  const script = `
+    echo "=== VOLUMIO DISPLAY DIAGNOSTICS ==="
+    echo "Generated: $(date)"
+    echo ""
+    echo "=== SYSTEM INFO ==="
+    echo "Vendor: $(cat /sys/class/dmi/id/sys_vendor 2>&1 || echo N/A)"
+    echo "Product: $(cat /sys/class/dmi/id/product_name 2>&1 || echo N/A)"
+    echo "Kernel: $(uname -r)"
+    echo ""
+    echo "=== KERNEL CMDLINE ==="
+    cat /proc/cmdline
+    echo ""
+    echo "=== DRM CONNECTORS ==="
+    for conn in /sys/class/drm/card*/card*/status; do echo "$conn: $(cat $conn 2>&1)"; done
+    echo ""
+    echo "=== PANEL ORIENTATION ==="
+    for orient in /sys/class/drm/*/panel_orientation; do [ -f "$orient" ] && echo "$orient: $(cat $orient 2>&1)"; done || echo "No panel_orientation found"
+    echo ""
+    echo "=== FBCON ROTATE ==="
+    cat /sys/class/graphics/fbcon/rotate 2>&1 || echo "fbcon not available"
+    echo ""
+    echo "=== XRANDR OUTPUT ==="
+    DISPLAY=:0 xrandr --verbose 2>&1 || echo "xrandr failed"
+    echo ""
+    echo "=== INPUT DEVICES ==="
+    DISPLAY=:0 xinput list 2>&1 || echo "xinput failed"
+    echo ""
+    echo "=== INPUT DEVICE PROPERTIES (first 3 devices) ==="
+    DISPLAY=:0 xinput list | grep -o "id=[0-9]*" | head -3 | while read id; do devid=$(echo $id | cut -d= -f2); echo "--- Device $devid ---"; DISPLAY=:0 xinput list-props $devid 2>&1; done || echo "xinput props failed"
+    echo ""
+    echo "=== DMESG ROTATION/DRM ==="
+    dmesg | grep -iE "panel_orientation|drm.*orientation|video=|fbcon" | tail -20
+    echo ""
+    echo "=== PLUGIN CONFIG ==="
+    cat /data/configuration/user_interface/display_configuration/config.json 2>&1 || echo "Config not found"
+    echo ""
+    echo "=== ROTATION CFG ==="
+    cat /data/plugins/user_interface/display_configuration/rotation.cfg 2>&1 || echo "rotation.cfg not found"
+    echo ""
+    echo "=== GRUB CONFIG CHECK ==="
+    grep -A5 -B5 volumio /boot/grub/grub.cfg 2>&1 || echo "No volumio entries in grub.cfg"
+    echo ""
+    echo "=== X11 CONFIG FILES ==="
+    ls -la /etc/X11/xorg.conf.d/*volumio* 2>&1 || echo "No volumio xorg configs found"
+    echo ""
+    echo "=== END DIAGNOSTICS ==="
+  `;
+
+  const outFd = fs.openSync(diagnosticFile, 'w');
+  const proc = spawn('bash', ['-c', script], {
+    stdio: ['ignore', outFd, outFd],
+    env: { ...process.env, DISPLAY: ':0' },
+  });
+
+  proc.on('exit', (code) => {
+    fs.closeSync(outFd);
+    if (code === 0) {
+      self.logger.info(`${logPrefix} Diagnostics saved to ${diagnosticFile}`);
+      self.commandRouter.pushToastMessage('success', 'Diagnostics Generated',
+        `Report saved to ${diagnosticFile}`);
+      defer.resolve();
+    } else {
+      self.logger.error(`${logPrefix} Diagnostics failed with exit code ${code}`);
+      self.commandRouter.pushToastMessage('error', 'Diagnostic Failed',
+        'Error during diagnostic generation');
+      defer.reject(new Error(`Diagnostics failed with code ${code}`));
+    }
+  });
+
+  proc.on('error', (err) => {
+    fs.closeSync(outFd);
+    self.logger.error(`${logPrefix} Failed to spawn diagnostics: ${err.message}`);
+    self.commandRouter.pushToastMessage('error', 'Diagnostic Failed',
+      'Could not spawn diagnostics process');
+    defer.reject(err);
+  });
+
+  return defer.promise;
+};
