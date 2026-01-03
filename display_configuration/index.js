@@ -37,6 +37,56 @@ display_configuration.prototype.getConfigurationFiles = function () {
    return ['config.json'];
 };
 
+// Safe config value extraction - handles various storage patterns
+// Patterns: {value: {value: x}}, {value: x, label: y}, {type: t, value: x}, or direct value
+display_configuration.prototype.getConfigValue = function (key, defaultValue) {
+   const self = this;
+   try {
+      const raw = self.config.get(key);
+      if (raw === undefined || raw === null) return defaultValue;
+
+      // Direct primitive value
+      if (typeof raw !== 'object') return raw;
+
+      // Has .value property
+      if (raw.value !== undefined) {
+         // Nested: {value: {value: x, label: y}}
+         if (typeof raw.value === 'object' && raw.value !== null && raw.value.value !== undefined) {
+            return raw.value.value;
+         }
+         // Simple: {value: x} or {value: x, label: y}
+         return raw.value;
+      }
+
+      return defaultValue;
+   } catch (e) {
+      return defaultValue;
+   }
+};
+
+// Get config object with label (for select boxes)
+display_configuration.prototype.getConfigSelect = function (key, defaultObj) {
+   const self = this;
+   try {
+      const raw = self.config.get(key);
+      if (raw === undefined || raw === null) return defaultObj;
+
+      // Nested: {value: {value: x, label: y}}
+      if (raw.value && typeof raw.value === 'object' && raw.value.value !== undefined) {
+         return { value: raw.value.value, label: raw.value.label || raw.value.value };
+      }
+
+      // Simple: {value: x, label: y}
+      if (raw.value !== undefined) {
+         return { value: raw.value, label: raw.label || raw.value };
+      }
+
+      return defaultObj;
+   } catch (e) {
+      return defaultObj;
+   }
+};
+
 display_configuration.prototype.onStop = function () {
    var self = this;
    var defer = libQ.defer();
@@ -102,38 +152,36 @@ display_configuration.prototype.getUIConfig = function () {
       __dirname + '/UIConfig.json')
       .then(async function (uiconf) {
 
-         var rvalue = self.config.get('rotatescreen') || { value: "normal", label: "normal" };
+         var rvalue = self.getConfigSelect('rotatescreen', { value: "normal", label: "Normal" });
 
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.value', rvalue.value);
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.label', rvalue.label);
 
-         let touchscreenId = await self.detectTouchscreen();
          let touchDevices = await self.detectTouchscreen();
          if (!touchDevices || touchDevices.length === 0) {
             uiconf.sections[0].content[1].hidden = true;
          }
 
 
-         var tcvalue = self.config.get('touchcorrection') || { value: "none", label: "none" };
+         var tcvalue = self.getConfigSelect('touchcorrection', { value: "automatic", label: "Automatic" });
 
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[1].value.value', tcvalue.value);
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[1].value.label', tcvalue.label);
 
-         var brightness = self.config.get('brightness');
-         // self.logger.info(logPrefix+' brightness UI ' + brightness)
+         var brightness = self.getConfigValue('brightness', 1);
          uiconf.sections[0].content[2].config.bars[0].value = brightness;
 
 
-         var hidecursor = self.config.get('hidecursor', false);
+         var hidecursor = self.getConfigValue('hidecursor', false);
          uiconf.sections[0].content[3].value = hidecursor;
 
 
-         var xsvalue = self.config.get('screensavertype') || { value: "dpms", label: "dpms" };
+         var xsvalue = self.getConfigSelect('screensavertype', { value: "dpms", label: "Turn the screen off" });
 
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.value', xsvalue.value);
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.label', xsvalue.label);
 
-         uiconf.sections[0].content[6].value = self.config.get('timeout');
+         uiconf.sections[0].content[6].value = self.getConfigValue('timeout', 120);
          uiconf.sections[0].content[6].attributes = [
             {
                placeholder: 120,
@@ -143,7 +191,7 @@ display_configuration.prototype.getUIConfig = function () {
             }
          ];
 
-         uiconf.sections[0].content[7].value = self.config.get('noifplay');
+         uiconf.sections[0].content[7].value = self.getConfigValue('noifplay', true);
 
          defer.resolve(uiconf);
       })
@@ -526,17 +574,17 @@ display_configuration.prototype.checkIfPlay = function () {
       self.logger.info(logPrefix + " xscreensaver cleaned up before starting");
    });
 
-   // 🔹 Start xscreensaver immediately if selected
-   const screensavertype = self.config.get("screensavertype").value;
+   // Start xscreensaver immediately if selected
+   const screensavertype = self.getConfigValue("screensavertype", "dpms");
    if (screensavertype === "xscreensaver") {
       self.ensureXscreensaver();
    }
 
-   // 🎵 Listen for Volumio playback state
+   // Listen for Volumio playback state
    self.socket.on("pushState", function (data) {
-      const timeout = self.config.get("timeout") || 0;
-      const noifplay = self.config.get("noifplay");
-      const screensavertype = self.config.get("screensavertype").value;
+      const timeout = self.getConfigValue("timeout", 0);
+      const noifplay = self.getConfigValue("noifplay", true);
+      const screensavertype = self.getConfigValue("screensavertype", "dpms");
 
       self.logger.info(
          `${logPrefix} Volumio status=${data.status} timeout=${timeout} noifplay=${noifplay} screensavertype=${screensavertype}`
@@ -573,8 +621,8 @@ display_configuration.prototype.checkIfPlay = function () {
 display_configuration.prototype.sleepScreen = function () {
    const self = this;
    const display = self.getDisplaynumber();
-   const screensavertype = self.config.get("screensavertype").value;
-   const timeout = self.config.get("timeout");
+   const screensavertype = self.getConfigValue("screensavertype", "dpms");
+   const timeout = self.getConfigValue("timeout", 120);
 
    try {
       if (screensavertype === "dpms") {
@@ -616,7 +664,7 @@ display_configuration.prototype.sleepScreen = function () {
 display_configuration.prototype.wakeupScreen = function () {
    const self = this;
    const display = self.getDisplaynumber();
-   const screensavertype = self.config.get("screensavertype").value;
+   const screensavertype = self.getConfigValue("screensavertype", "dpms");
 
    try {
       if (screensavertype === "dpms") {
@@ -716,7 +764,7 @@ display_configuration.prototype.xscreensettings = function (data) {
 display_configuration.prototype.setBrightnessSoft = function () {
    const self = this;
    const display = self.getDisplaynumber();
-   var value = self.config.get('brightness')
+   var value = self.getConfigValue('brightness', 1);
    // Clamp between 0.1 and 1.0 (xrandr rejects 0 or >1)
    const brightness = Math.max(0.1, Math.min(1.0, value));
 
@@ -745,7 +793,7 @@ display_configuration.prototype.setBrightness = function () {
 
    const self = this;
    const backlightDir = "/sys/class/backlight";
-   var percent = self.config.get('brightness') * 100
+   var percent = self.getConfigValue('brightness', 1) * 100;
 
    return new Promise((resolve, reject) => {
       fs.readdir(backlightDir, (err, devices) => {
@@ -868,8 +916,8 @@ display_configuration.prototype.savescreensettings = function (data) {
 
       try {
          const state = self.commandRouter.volumioGetState();
-         const timeout = self.config.get('timeout');
-         const noifplay = self.config.get('noifplay');
+         const timeout = self.getConfigValue('timeout', 120);
+         const noifplay = self.getConfigValue('noifplay', true);
 
          if ((state.status === "play") && noifplay) {
             self.wakeupScreen();
@@ -973,7 +1021,10 @@ display_configuration.prototype.applyRotation = async function () {
    const self = this;
    const display = self.getDisplaynumber();
 
-   const rotateConf = self.config.get("rotatescreen") || {};
+   // Handle both flat and nested config structures
+   const rawConf = self.config.get("rotatescreen") || {};
+   // If nested: {value: {value: x, fbconv: y}} vs flat: {value: x, fbconv: y}
+   const rotateConf = (rawConf.value && typeof rawConf.value === 'object') ? rawConf.value : rawConf;
    const rotatescreen = rotateConf.value || "normal";
 
    // fallback mapping if fields are missing
@@ -1259,7 +1310,7 @@ display_configuration.prototype.applyPointerCorrection = async function () {
         const id = idMatch.replace("id=", "").trim();
 
         // Align mouse coordinate transformation with screen orientation
-        const rotatescreen = self.config.get("rotatescreen")?.value || "normal";
+        const rotatescreen = self.getConfigValue("rotatescreen", "normal");
         const matrixMap = {
           normal:   "1 0 0  0 1 0  0 0 1",
           inverted: "-1 0 1  0 -1 1  0 0 1",
@@ -1284,8 +1335,8 @@ display_configuration.prototype.applyTouchCorrection = async function (skipDetec
    const self = this;
    const display = self.getDisplaynumber();
    const screen = await self.detectConnectedScreen();
-   const touchcorrection = this.config.get("touchcorrection").value;
-   const rotatescreen = (this.config.get("rotatescreen")?.value) || "normal";
+   const touchcorrection = self.getConfigValue("touchcorrection", "automatic");
+   const rotatescreen = self.getConfigValue("rotatescreen", "normal");
 
    // Inline helper
    const runCommand = (cmd) =>
@@ -1431,7 +1482,7 @@ display_configuration.prototype.applyTouchCorrection = async function (skipDetec
 display_configuration.prototype.applyCursorSetting = function () {
    const self = this;
    const display = self.getDisplaynumber();
-   const hidecursor = self.config.get("hidecursor");
+   const hidecursor = self.getConfigValue("hidecursor", false);
 
    try {
       // Stop any existing unclutter processes first
