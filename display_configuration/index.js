@@ -1374,18 +1374,26 @@ display_configuration.prototype.applyPointerCorrection = async function () {
         const idMatch = await execCmd(`DISPLAY=${display} xinput list | grep -F "${name}" | grep -o "id=[0-9]*"`);
         const id = idMatch.replace("id=", "").trim();
 
-        // Align mouse coordinate transformation with screen orientation
-        const rotatescreen = self.getConfigValue("rotatescreen", "normal");
-        const matrixMap = {
-          normal:   "1 0 0  0 1 0  0 0 1",
-          inverted: "-1 0 1  0 -1 1  0 0 1",
-          left:     "0 -1 1  1 0 0  0 0 1",
-          right:    "0 1 0  -1 0 1  0 0 1"
-        };
-        const matrix = matrixMap[rotatescreen] || matrixMap.normal;
+        // When kernel forces panel orientation, DRM/libinput already handles coordinate rotation
+        // Applying additional matrix would double-invert the coordinates
+        let matrix;
+        if (self.drmForcesOrientation) {
+          matrix = "1 0 0  0 1 0  0 0 1"; // identity - kernel handles rotation
+          self.logger.info(`${logPrefix} Kernel forces orientation - using identity matrix for pointer ${name} (id=${id})`);
+        } else {
+          // Align mouse coordinate transformation with screen orientation
+          const rotatescreen = self.getConfigValue("rotatescreen", "normal");
+          const matrixMap = {
+            normal:   "1 0 0  0 1 0  0 0 1",
+            inverted: "-1 0 1  0 -1 1  0 0 1",
+            left:     "0 -1 1  1 0 0  0 0 1",
+            right:    "0 1 0  -1 0 1  0 0 1"
+          };
+          matrix = matrixMap[rotatescreen] || matrixMap.normal;
+          self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) - ${rotatescreen}`);
+        }
 
         await execCmd(`DISPLAY=${display} xinput set-prop ${id} "Coordinate Transformation Matrix" ${matrix}`);
-        self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) → ${rotatescreen}`);
       } catch (err) {
         self.logger.warn(`${logPrefix} Failed to correct pointer ${name}: ${err.message}`);
       }
