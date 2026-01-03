@@ -1,18 +1,19 @@
 {
-    "TITLE": "Kiosk Instellingen",
-    "DISPLAY_SETTINGS": "Scherminstellingen",
+    "PLUGIN_TITLE": "Scherminstellingen",
     "APPLY": "Toepassen",
 
-    "DISPLAY_SECTION": "Scherm",
-    "DISPLAY_ROT": "Schermrotatie",
-    "DISPLAY_ROT_DOC": "Kies hoe u het scherm wilt draaien.",
+    "DEVICE_ROTATION_SECTION": "Apparaatrotatie",
+    "DEVICE_ROT": "Apparaatrotatie",
+    "DEVICE_ROT_DOC": "Stelt orientatie in voor scherm en alle invoer/uitvoerlagen.",
     "NORMAL": "Normaal",
     "LEFT": "Links (90 CCW)",
     "RIGHT": "Rechts (90 CW)",
     "INVERTED": "Omgekeerd (180)",
 
-    "INPUT_SECTION": "Invoerkalibratie",
-    "INPUT_SECTION_DOC": "Aanpassen als touch of aanwijzer niet overeenkomt met schermrichting.",
+    "BRIGHTNESS": "Helderheid",
+
+    "CALIBRATION_SECTION": "Hardware-kalibratie",
+    "CALIBRATION_SECTION_DOC": "Alleen aanpassen als hardwarelagen niet overeenkomen met apparaatrichting. De meeste gebruikers hebben dit niet nodig.",
     "TOUCH_OFFSET": "Touch-offset",
     "TOUCH_OFFSET_DOC": "Compenseer voor fysieke montagerichting van het touchpaneel.",
     "POINTER_OFFSET": "Aanwijzer-offset",
@@ -21,18 +22,15 @@
     "FBCON_OFFSET_DOC": "Console tekst rotatie (TTY). Geldt na herstart.",
     "PLYMOUTH_OFFSET": "Plymouth-offset",
     "PLYMOUTH_OFFSET_DOC": "Boot splash rotatie (panel_orientation). Geldt na herstart.",
-    "SAME_AS_DISPLAY": "Zelfde als scherm",
+    "SAME_AS_DEVICE": "Zelfde als apparaat",
     "ROT_NONE": "Geen",
     "ROT_90CW": "90 CW",
     "ROT_180": "180",
     "ROT_90CCW": "90 CCW",
 
-    "BRIGHTNESS": "Helderheid",
-
+    "SCREENSAVER_SECTION": "Schermbeveiliging",
     "MOUSE_C": "Muiscursor verbergen",
     "MOUSE_C_DOC": "Indien ingeschakeld, wordt de muiscursor verborgen wanneer niet in gebruik.",
-
-    "SCREENSAVER_SECTION": "Schermbeveiliging",
     "XSTYPE": "Schermbeveiligingstype",
     "XSTYPE_DOC": "Kies schermbeveiligingstype.",
     "DPMS": "Scherm uitschakelen",

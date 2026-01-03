@@ -1,18 +1,19 @@
 {
-    "TITLE": "Impostazioni Kiosk",
-    "DISPLAY_SETTINGS": "Impostazioni schermo",
+    "PLUGIN_TITLE": "Impostazioni schermo",
     "APPLY": "Applica",
 
-    "DISPLAY_SECTION": "Schermo",
-    "DISPLAY_ROT": "Rotazione schermo",
-    "DISPLAY_ROT_DOC": "Scegli come vuoi ruotare lo schermo.",
+    "DEVICE_ROTATION_SECTION": "Rotazione dispositivo",
+    "DEVICE_ROT": "Rotazione dispositivo",
+    "DEVICE_ROT_DOC": "Imposta l'orientamento per lo schermo e tutti i livelli di input/output.",
     "NORMAL": "Normale",
     "LEFT": "Sinistra (90 CCW)",
     "RIGHT": "Destra (90 CW)",
     "INVERTED": "Invertito (180)",
 
-    "INPUT_SECTION": "Calibrazione input",
-    "INPUT_SECTION_DOC": "Regola se il touch o il puntatore non corrisponde all'orientamento dello schermo.",
+    "BRIGHTNESS": "Luminosita",
+
+    "CALIBRATION_SECTION": "Calibrazione hardware",
+    "CALIBRATION_SECTION_DOC": "Regolare solo se i livelli hardware non sono allineati con l'orientamento del dispositivo. La maggior parte degli utenti non ne avra bisogno.",
     "TOUCH_OFFSET": "Offset touch",
     "TOUCH_OFFSET_DOC": "Compensa l'orientamento fisico di montaggio del pannello touch.",
     "POINTER_OFFSET": "Offset puntatore",
@@ -21,18 +22,15 @@
     "FBCON_OFFSET_DOC": "Rotazione testo console (TTY). Si applica al riavvio.",
     "PLYMOUTH_OFFSET": "Offset Plymouth",
     "PLYMOUTH_OFFSET_DOC": "Rotazione schermata di avvio (panel_orientation). Si applica al riavvio.",
-    "SAME_AS_DISPLAY": "Come lo schermo",
+    "SAME_AS_DEVICE": "Come il dispositivo",
     "ROT_NONE": "Nessuno",
     "ROT_90CW": "90 CW",
     "ROT_180": "180",
     "ROT_90CCW": "90 CCW",
 
-    "BRIGHTNESS": "Luminosita",
-
+    "SCREENSAVER_SECTION": "Salvaschermo",
     "MOUSE_C": "Nascondi cursore mouse",
     "MOUSE_C_DOC": "Se abilitato, il cursore del mouse viene nascosto quando non in uso.",
-
-    "SCREENSAVER_SECTION": "Salvaschermo",
     "XSTYPE": "Tipo di salvaschermo",
     "XSTYPE_DOC": "Scegli il tipo di salvaschermo.",
     "DPMS": "Spegni lo schermo",

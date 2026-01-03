@@ -1,18 +1,19 @@
 {
-    "TITLE": "Configuracion de Kiosco",
-    "DISPLAY_SETTINGS": "Configuracion de pantalla",
+    "PLUGIN_TITLE": "Configuracion de pantalla",
     "APPLY": "Aplicar",
 
-    "DISPLAY_SECTION": "Pantalla",
-    "DISPLAY_ROT": "Rotacion de pantalla",
-    "DISPLAY_ROT_DOC": "Elija como desea rotar la pantalla.",
+    "DEVICE_ROTATION_SECTION": "Rotacion del dispositivo",
+    "DEVICE_ROT": "Rotacion del dispositivo",
+    "DEVICE_ROT_DOC": "Establece la orientacion para la pantalla y todas las capas de entrada/salida.",
     "NORMAL": "Normal",
     "LEFT": "Izquierda (90 CCW)",
     "RIGHT": "Derecha (90 CW)",
     "INVERTED": "Invertido (180)",
 
-    "INPUT_SECTION": "Calibracion de entrada",
-    "INPUT_SECTION_DOC": "Ajuste si el tactil o el puntero no coincide con la orientacion de la pantalla.",
+    "BRIGHTNESS": "Brillo",
+
+    "CALIBRATION_SECTION": "Calibracion de hardware",
+    "CALIBRATION_SECTION_DOC": "Ajustar solo si las capas de hardware no se alinean con la orientacion del dispositivo. La mayoria de los usuarios no lo necesitaran.",
     "TOUCH_OFFSET": "Desfase tactil",
     "TOUCH_OFFSET_DOC": "Compensa la orientacion de montaje fisico del panel tactil.",
     "POINTER_OFFSET": "Desfase del puntero",
@@ -21,18 +22,15 @@
     "FBCON_OFFSET_DOC": "Rotacion de texto de consola (TTY). Se aplica al reiniciar.",
     "PLYMOUTH_OFFSET": "Desfase Plymouth",
     "PLYMOUTH_OFFSET_DOC": "Rotacion de pantalla de arranque (panel_orientation). Se aplica al reiniciar.",
-    "SAME_AS_DISPLAY": "Igual que la pantalla",
+    "SAME_AS_DEVICE": "Igual que el dispositivo",
     "ROT_NONE": "Ninguno",
     "ROT_90CW": "90 CW",
     "ROT_180": "180",
     "ROT_90CCW": "90 CCW",
 
-    "BRIGHTNESS": "Brillo",
-
+    "SCREENSAVER_SECTION": "Protector de pantalla",
     "MOUSE_C": "Ocultar cursor del raton",
     "MOUSE_C_DOC": "Si esta habilitado, el cursor del raton se oculta cuando no esta en uso.",
-
-    "SCREENSAVER_SECTION": "Protector de pantalla",
     "XSTYPE": "Tipo de protector de pantalla",
     "XSTYPE_DOC": "Elija el tipo de protector de pantalla.",
     "DPMS": "Apagar la pantalla",

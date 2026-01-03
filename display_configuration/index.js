@@ -152,56 +152,52 @@ display_configuration.prototype.getUIConfig = function () {
       __dirname + '/UIConfig.json')
       .then(async function (uiconf) {
 
-         // All settings in section 0
-         // [0] rotatescreen
+         // Section 0: Device Rotation
+         // [0] rotatescreen, [1] brightness
          var rvalue = self.getConfigSelect('rotatescreen', { value: "normal", label: "Normal" });
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.value', rvalue.value);
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.label', rvalue.label);
 
-         // [1] brightness
          var brightness = self.getConfigValue('brightness', 1);
          uiconf.sections[0].content[1].config.bars[0].value = brightness;
 
-         // [2] touch_offset
+         // Section 1: Hardware Calibration
+         // [0] touch_offset, [1] pointer_offset, [2] fbcon_offset, [3] plymouth_offset
          var touchOffset = self.getConfigSelect('touch_offset', { value: "0", label: "None" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[2].value.value', touchOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[2].value.label', touchOffset.label);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[0].value.value', touchOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[0].value.label', touchOffset.label);
 
          // Hide touch_offset if no touch devices
          let touchDevices = await self.detectTouchscreen();
          if (!touchDevices || touchDevices.length === 0) {
-            uiconf.sections[0].content[2].hidden = true;
+            uiconf.sections[1].content[0].hidden = true;
          }
 
-         // [3] pointer_offset (default None - xrandr handles mice)
          var pointerOffset = self.getConfigSelect('pointer_offset', { value: "0", label: "None" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[3].value.value', pointerOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[3].value.label', pointerOffset.label);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[1].value.value', pointerOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[1].value.label', pointerOffset.label);
 
-         // [4] fbcon_offset (TTY console text)
-         var fbconOffset = self.getConfigSelect('fbcon_offset', { value: "same", label: "Same as Display" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.value', fbconOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.label', fbconOffset.label);
+         var fbconOffset = self.getConfigSelect('fbcon_offset', { value: "same", label: "Same as Device" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[2].value.value', fbconOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[2].value.label', fbconOffset.label);
 
-         // [5] plymouth_offset (boot splash)
-         var plymouthOffset = self.getConfigSelect('plymouth_offset', { value: "same", label: "Same as Display" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[5].value.value', plymouthOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[5].value.label', plymouthOffset.label);
+         var plymouthOffset = self.getConfigSelect('plymouth_offset', { value: "same", label: "Same as Device" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[3].value.value', plymouthOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[3].value.label', plymouthOffset.label);
 
-         // [6] hidecursor
+         // Section 2: Screensaver
+         // [0] hidecursor, [1] screensavertype, [2] xscreensettings, [3] timeout, [4] noifplay
          var hidecursor = self.getConfigValue('hidecursor', false);
-         uiconf.sections[0].content[6].value = hidecursor;
+         uiconf.sections[2].content[0].value = hidecursor;
 
-         // [7] screensavertype
          var xsvalue = self.getConfigSelect('screensavertype', { value: "dpms", label: "Turn the screen off" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[7].value.value', xsvalue.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[7].value.label', xsvalue.label);
+         self.configManager.setUIConfigParam(uiconf, 'sections[2].content[1].value.value', xsvalue.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[2].content[1].value.label', xsvalue.label);
 
-         // [8] xscreensettings button - no value to set
+         // [2] xscreensettings button - no value to set
 
-         // [9] timeout
-         uiconf.sections[0].content[9].value = self.getConfigValue('timeout', 120);
-         uiconf.sections[0].content[9].attributes = [
+         uiconf.sections[2].content[3].value = self.getConfigValue('timeout', 120);
+         uiconf.sections[2].content[3].attributes = [
             {
                placeholder: 120,
                maxlength: 4,
@@ -210,8 +206,9 @@ display_configuration.prototype.getUIConfig = function () {
             }
          ];
 
-         // [10] noifplay
-         uiconf.sections[0].content[10].value = self.getConfigValue('noifplay', true);
+         uiconf.sections[2].content[4].value = self.getConfigValue('noifplay', true);
+
+         // Section 3: Diagnostics - just button, no values
 
          defer.resolve(uiconf);
       })

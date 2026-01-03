@@ -1,18 +1,19 @@
 {
-    "TITLE": "Parametres Kiosque",
-    "DISPLAY_SETTINGS": "Parametres d'affichage",
+    "PLUGIN_TITLE": "Parametres d'affichage",
     "APPLY": "Appliquer",
 
-    "DISPLAY_SECTION": "Affichage",
-    "DISPLAY_ROT": "Rotation de l'ecran",
-    "DISPLAY_ROT_DOC": "Choisissez comment vous voulez faire pivoter l'affichage.",
+    "DEVICE_ROTATION_SECTION": "Rotation de l'appareil",
+    "DEVICE_ROT": "Rotation de l'appareil",
+    "DEVICE_ROT_DOC": "Definit l'orientation pour l'affichage et toutes les couches d'entree/sortie.",
     "NORMAL": "Normal",
     "LEFT": "Gauche (90 CCW)",
     "RIGHT": "Droite (90 CW)",
     "INVERTED": "Inverse (180)",
 
-    "INPUT_SECTION": "Calibration des entrees",
-    "INPUT_SECTION_DOC": "Ajustez si le tactile ou le pointeur ne correspond pas a l'orientation de l'affichage.",
+    "BRIGHTNESS": "Luminosite",
+
+    "CALIBRATION_SECTION": "Calibration materielle",
+    "CALIBRATION_SECTION_DOC": "Ajuster uniquement si les couches materielles ne correspondent pas a l'orientation de l'appareil. La plupart des utilisateurs n'en auront pas besoin.",
     "TOUCH_OFFSET": "Decalage tactile",
     "TOUCH_OFFSET_DOC": "Compenser l'orientation de montage physique du panneau tactile.",
     "POINTER_OFFSET": "Decalage pointeur",
@@ -21,18 +22,15 @@
     "FBCON_OFFSET_DOC": "Rotation du texte console (TTY). Applique au redemarrage.",
     "PLYMOUTH_OFFSET": "Decalage Plymouth",
     "PLYMOUTH_OFFSET_DOC": "Rotation de l'ecran de demarrage (panel_orientation). Applique au redemarrage.",
-    "SAME_AS_DISPLAY": "Identique a l'affichage",
+    "SAME_AS_DEVICE": "Identique a l'appareil",
     "ROT_NONE": "Aucun",
     "ROT_90CW": "90 CW",
     "ROT_180": "180",
     "ROT_90CCW": "90 CCW",
 
-    "BRIGHTNESS": "Luminosite",
-
+    "SCREENSAVER_SECTION": "Economiseur d'ecran",
     "MOUSE_C": "Masquer le curseur de la souris",
     "MOUSE_C_DOC": "Si active, le curseur de la souris est masque lorsqu'il n'est pas utilise.",
-
-    "SCREENSAVER_SECTION": "Economiseur d'ecran",
     "XSTYPE": "Type d'economiseur d'ecran",
     "XSTYPE_DOC": "Choisissez le type d'economiseur d'ecran.",
     "DPMS": "Eteindre l'ecran",

@@ -1,18 +1,19 @@
 {
-    "TITLE": "Kiosk-Einstellungen",
-    "DISPLAY_SETTINGS": "Anzeigeeinstellungen",
+    "PLUGIN_TITLE": "Anzeigeeinstellungen",
     "APPLY": "Anwenden",
 
-    "DISPLAY_SECTION": "Anzeige",
-    "DISPLAY_ROT": "Bildschirmdrehung",
-    "DISPLAY_ROT_DOC": "Wahlen Sie die gewunschte Bildschirmausrichtung.",
+    "DEVICE_ROTATION_SECTION": "Geratedrehung",
+    "DEVICE_ROT": "Geratedrehung",
+    "DEVICE_ROT_DOC": "Legt die Ausrichtung fur Anzeige und alle Ein-/Ausgabeschichten fest.",
     "NORMAL": "Normal",
     "LEFT": "Links (90 CCW)",
     "RIGHT": "Rechts (90 CW)",
     "INVERTED": "Umgekehrt (180)",
 
-    "INPUT_SECTION": "Eingabekalibrierung",
-    "INPUT_SECTION_DOC": "Anpassen, wenn Touch oder Zeiger nicht mit der Anzeigeausrichtung ubereinstimmt.",
+    "BRIGHTNESS": "Helligkeit",
+
+    "CALIBRATION_SECTION": "Hardware-Kalibrierung",
+    "CALIBRATION_SECTION_DOC": "Nur anpassen, wenn Hardware-Schichten nicht mit der Gerateausrichtung ubereinstimmen. Die meisten Benutzer benotigen dies nicht.",
     "TOUCH_OFFSET": "Touch-Versatz",
     "TOUCH_OFFSET_DOC": "Kompensation fur die physische Montageausrichtung des Touch-Panels.",
     "POINTER_OFFSET": "Zeiger-Versatz",
@@ -21,18 +22,15 @@
     "FBCON_OFFSET_DOC": "Konsolen-Text-Rotation (TTY). Gilt nach Neustart.",
     "PLYMOUTH_OFFSET": "Plymouth-Versatz",
     "PLYMOUTH_OFFSET_DOC": "Boot-Splash-Rotation (panel_orientation). Gilt nach Neustart.",
-    "SAME_AS_DISPLAY": "Wie Anzeige",
+    "SAME_AS_DEVICE": "Wie Gerat",
     "ROT_NONE": "Keine",
     "ROT_90CW": "90 CW",
     "ROT_180": "180",
     "ROT_90CCW": "90 CCW",
 
-    "BRIGHTNESS": "Helligkeit",
-
+    "SCREENSAVER_SECTION": "Bildschirmschoner",
     "MOUSE_C": "Mauszeiger ausblenden",
     "MOUSE_C_DOC": "Wenn aktiviert, wird der Mauszeiger bei Nichtbenutzung ausgeblendet.",
-
-    "SCREENSAVER_SECTION": "Bildschirmschoner",
     "XSTYPE": "Bildschirmschoner-Typ",
     "XSTYPE_DOC": "Bildschirmschoner-Typ wahlen.",
     "DPMS": "Bildschirm ausschalten",

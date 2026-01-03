@@ -1,12 +1,12 @@
 {
   "page": {
-    "label": "TRANSLATE.DISPLAY_SETTINGS"
+    "label": "TRANSLATE.PLUGIN_TITLE"
   },
   "sections": [
     {
-      "id": "display",
+      "id": "device_rotation",
       "element": "section",
-      "label": "TRANSLATE.DISPLAY_SECTION",
+      "label": "TRANSLATE.DEVICE_ROTATION_SECTION",
       "onSave": {
         "type": "controller",
         "endpoint": "user_interface/display_configuration",
@@ -31,8 +31,8 @@
         {
           "id": "rotatescreen",
           "element": "select",
-          "doc": "TRANSLATE.DISPLAY_ROT_DOC",
-          "label": "TRANSLATE.DISPLAY_ROT",
+          "doc": "TRANSLATE.DEVICE_ROT_DOC",
+          "label": "TRANSLATE.DEVICE_ROT",
           "value": {
             "value": "normal",
             "label": "Normal"
@@ -72,7 +72,15 @@
               }
             ]
           }
-        },
+        }
+      ]
+    },
+    {
+      "id": "hardware_calibration",
+      "element": "section",
+      "label": "TRANSLATE.CALIBRATION_SECTION",
+      "description": "TRANSLATE.CALIBRATION_SECTION_DOC",
+      "content": [
         {
           "id": "touch_offset",
           "element": "select",
@@ -136,12 +144,12 @@
           "label": "TRANSLATE.FBCON_OFFSET",
           "value": {
             "value": "same",
-            "label": "Same as Display"
+            "label": "Same as Device"
           },
           "options": [
             {
               "value": "same",
-              "label": "TRANSLATE.SAME_AS_DISPLAY"
+              "label": "TRANSLATE.SAME_AS_DEVICE"
             },
             {
               "value": "0",
@@ -168,12 +176,12 @@
           "label": "TRANSLATE.PLYMOUTH_OFFSET",
           "value": {
             "value": "same",
-            "label": "Same as Display"
+            "label": "Same as Device"
           },
           "options": [
             {
               "value": "same",
-              "label": "TRANSLATE.SAME_AS_DISPLAY"
+              "label": "TRANSLATE.SAME_AS_DEVICE"
             },
             {
               "value": "0",
@@ -192,7 +200,14 @@
               "label": "TRANSLATE.ROT_90CCW"
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "id": "screensaver",
+      "element": "section",
+      "label": "TRANSLATE.SCREENSAVER_SECTION",
+      "content": [
         {
           "id": "hidecursor",
           "element": "switch",

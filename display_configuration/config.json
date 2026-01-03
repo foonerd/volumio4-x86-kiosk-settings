@@ -13,11 +13,11 @@
     },
     "fbcon_offset": {
         "value": "same",
-        "label": "Same as Display"
+        "label": "Same as Device"
     },
     "plymouth_offset": {
         "value": "same",
-        "label": "Same as Display"
+        "label": "Same as Device"
     },
     "hidecursor": {
         "type": "boolean",

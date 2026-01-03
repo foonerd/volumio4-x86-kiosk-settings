@@ -1,18 +1,19 @@
 {
-    "TITLE": "Kiosk Settings",
-    "DISPLAY_SETTINGS": "Display Settings",
+    "PLUGIN_TITLE": "Display Settings",
     "APPLY": "Apply",
 
-    "DISPLAY_SECTION": "Display",
-    "DISPLAY_ROT": "Display Rotation",
-    "DISPLAY_ROT_DOC": "Choose how you want to rotate the display.",
+    "DEVICE_ROTATION_SECTION": "Device Rotation",
+    "DEVICE_ROT": "Device Rotation",
+    "DEVICE_ROT_DOC": "Sets orientation for display and all input/output layers.",
     "NORMAL": "Normal",
     "LEFT": "Left (90 CCW)",
     "RIGHT": "Right (90 CW)",
     "INVERTED": "Inverted (180)",
 
-    "INPUT_SECTION": "Input Calibration",
-    "INPUT_SECTION_DOC": "Adjust if touch or pointer does not match display orientation on your hardware.",
+    "BRIGHTNESS": "Brightness",
+
+    "CALIBRATION_SECTION": "Hardware Calibration",
+    "CALIBRATION_SECTION_DOC": "Adjust only if hardware layers do not align with device orientation. Most users will not need this.",
     "TOUCH_OFFSET": "Touch Offset",
     "TOUCH_OFFSET_DOC": "Compensate for touch panel physical mounting orientation.",
     "POINTER_OFFSET": "Pointer Offset",
@@ -21,18 +22,15 @@
     "FBCON_OFFSET_DOC": "Console text rotation (TTY). Applies on reboot.",
     "PLYMOUTH_OFFSET": "Plymouth Offset",
     "PLYMOUTH_OFFSET_DOC": "Boot splash rotation (panel_orientation). Applies on reboot.",
-    "SAME_AS_DISPLAY": "Same as Display",
+    "SAME_AS_DEVICE": "Same as Device",
     "ROT_NONE": "None",
     "ROT_90CW": "90 CW",
     "ROT_180": "180",
     "ROT_90CCW": "90 CCW",
 
-    "BRIGHTNESS": "Brightness",
-
+    "SCREENSAVER_SECTION": "Screensaver",
     "MOUSE_C": "Hide Mouse Cursor",
     "MOUSE_C_DOC": "If enabled, the mouse cursor is hidden when not in use.",
-
-    "SCREENSAVER_SECTION": "Screensaver",
     "XSTYPE": "Screensaver Type",
     "XSTYPE_DOC": "Choose screensaver type.",
     "DPMS": "Turn the screen off",
