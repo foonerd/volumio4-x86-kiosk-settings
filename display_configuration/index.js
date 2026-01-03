@@ -57,6 +57,8 @@ display_configuration.prototype.onStart = function () {
       self.checkIfPlay();
       self.applyscreensettingsboot();
       self.monitorLid();
+      // Re-apply input settings after kiosk browser starts
+      self.waitForKioskAndReapply();
    }).catch((err) => {
       self.logger.error(logPrefix + ' X server wait failed: ' + err.message);
       // Fallback: try anyway after delay
@@ -64,6 +66,7 @@ display_configuration.prototype.onStart = function () {
          self.checkIfPlay();
          self.applyscreensettingsboot();
          self.monitorLid();
+         self.waitForKioskAndReapply();
       }, 5000);
    });
 
@@ -368,6 +371,48 @@ display_configuration.prototype.waitForXServer = function () {
       // Start first attempt after initial delay
       setTimeout(tryConnect, 500);
    });
+};
+
+// Wait for kiosk browser to start, then re-apply input settings
+display_configuration.prototype.waitForKioskAndReapply = function () {
+   const self = this;
+   const maxChecks = 60;
+   const checkInterval = 1000;
+   let checkCount = 0;
+   let kioskDetected = false;
+
+   const checkKiosk = () => {
+      checkCount++;
+
+      exec("pgrep -f 'chromium|openbox'", (err, stdout) => {
+         if (!err && stdout.trim() && !kioskDetected) {
+            kioskDetected = true;
+            self.logger.info(logPrefix + ` Kiosk browser detected after ${checkCount}s, re-applying input settings in 3s`);
+
+            // Wait for browser to fully initialize before re-applying
+            setTimeout(async () => {
+               try {
+                  await self.applyTouchCorrection(true);
+                  await self.applyPointerCorrection();
+                  self.logger.info(logPrefix + ' Input settings re-applied after kiosk start');
+               } catch (e) {
+                  self.logger.error(logPrefix + ' Failed to re-apply input settings: ' + e.message);
+               }
+            }, 3000);
+            return;
+         }
+
+         if (checkCount >= maxChecks) {
+            self.logger.info(logPrefix + ' Kiosk monitor timeout - browser may already be running or not in use');
+            return;
+         }
+
+         setTimeout(checkKiosk, checkInterval);
+      });
+   };
+
+   // Start checking after initial delay
+   setTimeout(checkKiosk, 2000);
 };
 
 display_configuration.prototype.drmForcesOrientation = null;
