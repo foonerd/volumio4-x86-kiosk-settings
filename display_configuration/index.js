@@ -813,7 +813,7 @@ display_configuration.prototype.applyscreensettingsboot = async function () {
       self.logger.info(logPrefix + ` Panel Rotation applied`);
    }
 
-   await this.applyTouchCorrection();
+   await this.applyTouchCorrection(true);  // skipDetection=true at boot
    await this.applyPointerCorrection();
    this.applyCursorSetting();
    self.setBrightness();
@@ -1172,7 +1172,7 @@ display_configuration.prototype.applyPointerCorrection = async function () {
 };
 
 // 2. rotate touchsscreenn
-display_configuration.prototype.applyTouchCorrection = async function () {
+display_configuration.prototype.applyTouchCorrection = async function (skipDetection) {
    const self = this;
    const display = self.getDisplaynumber();
    const screen = await self.detectConnectedScreen();
@@ -1243,12 +1243,18 @@ display_configuration.prototype.applyTouchCorrection = async function () {
                // 2) detect inversion per-device if not saved
                let inversion = inversionMap[devKey];
                if (!inversion) {
-                  // detectTouchInversion should return {invertX:boolean, invertY:boolean} or null/false
-                  inversion = await self.detectTouchInversion(dev.id, screen);
-                  if (!inversion) inversion = { invertX: false, invertY: false };
-                  inversionMap[devKey] = inversion;
-                  self.config.set("touch_inversion_by_id", inversionMap);
-                  self.logger.info(`${logPrefix} Detected inversion for ${dev.name} id=${dev.id}: ${JSON.stringify(inversion)}`);
+                  if (skipDetection) {
+                     // At boot: use safe defaults, don't block waiting for user input
+                     inversion = { invertX: false, invertY: false };
+                     self.logger.info(`${logPrefix} Boot mode: using default inversion for ${dev.name} id=${dev.id} (no stored value)`);
+                  } else {
+                     // User-triggered: perform interactive detection
+                     inversion = await self.detectTouchInversion(dev.id, screen);
+                     if (!inversion) inversion = { invertX: false, invertY: false };
+                     inversionMap[devKey] = inversion;
+                     self.config.set("touch_inversion_by_id", inversionMap);
+                     self.logger.info(`${logPrefix} Detected inversion for ${dev.name} id=${dev.id}: ${JSON.stringify(inversion)}`);
+                  }
                } else {
                   self.logger.info(`${logPrefix} Using stored inversion for ${dev.name} id=${dev.id}: ${JSON.stringify(inversion)}`);
                }
