@@ -1413,7 +1413,7 @@ display_configuration.prototype.applyTouchCorrection = async function (skipDetec
    let rotatescreen = self.getConfigValue("rotatescreen", "normal");
 
    // Validate touchcorrection value
-   const validTouchCorrections = ['automatic', 'none', 'swap_x', 'swap_y', 'swap_both'];
+   const validTouchCorrections = ['automatic', 'none', 'swap-lr', 'swap-ud', 'swap-both'];
    if (!validTouchCorrections.includes(touchcorrection)) {
       self.logger.warn(logPrefix + ` Invalid touchcorrection value '${touchcorrection}', using 'automatic'`);
       touchcorrection = "automatic";
