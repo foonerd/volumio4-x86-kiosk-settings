@@ -320,7 +320,7 @@ display_configuration.prototype.detectConnectedScreen = function () {
    });
 };
 
-display_configuration.prototype.writeRotationConfig = function (screen, orientation, fbRotate) {
+display_configuration.prototype.writeRotationConfig = function (screen, plymouthDegrees, fbRotate) {
    const self = this;
 
    return new Promise((resolve, reject) => {
@@ -330,10 +330,11 @@ display_configuration.prototype.writeRotationConfig = function (screen, orientat
          return reject(new Error("Invalid screen parameter"));
       }
 
-      const validOrientations = ['normal', 'upside_down', 'left_side_up', 'right_side_up'];
-      if (!validOrientations.includes(orientation)) {
-         self.logger.warn(logPrefix + ` writeRotationConfig: unknown orientation '${orientation}', using 'normal'`);
-         orientation = 'normal';
+      // Validate plymouth degrees
+      const validPlymouth = [0, 90, 180, 270];
+      if (!validPlymouth.includes(plymouthDegrees)) {
+         self.logger.warn(logPrefix + ` writeRotationConfig: invalid plymouthDegrees '${plymouthDegrees}', using 0`);
+         plymouthDegrees = 0;
       }
 
       const fbValue = parseInt(fbRotate, 10);
@@ -342,9 +343,11 @@ display_configuration.prototype.writeRotationConfig = function (screen, orientat
          fbRotate = 0;
       }
 
-      // Always overwrite with the new values
+      // Use plymouth= for boot splash, fbcon= for TTY
+      // NO panel_orientation - let xrandr handle X11 rotation properly
+      // Variable name is 'screen' because that's what grub.cfg expects ($screen)
       const content =
-         `set screen=video=${screen}:panel_orientation=${orientation}\n` +
+         `set screen=plymouth=${plymouthDegrees}\n` +
          `set efifb=video=efifb\n` +
          `set fbcon=fbcon=rotate:${fbRotate}\n`;
 
@@ -363,7 +366,7 @@ display_configuration.prototype.writeRotationConfig = function (screen, orientat
          }
          self.logger.info(
             logPrefix +
-            ` Rotation config saved for Grub: screen=${screen}, orientation=${orientation}, fbcon=${fbRotate}`
+            ` Rotation config saved for Grub: screen=${screen}, plymouth=${plymouthDegrees}, fbcon=${fbRotate}`
          );
          resolve();
       });
@@ -1072,18 +1075,21 @@ display_configuration.prototype.applyscreensettingsboot = async function () {
    // detect screen before using it
    const screen = await this.detectConnectedScreen();
 
+   // Check if old panel_orientation is still in effect from previous config
    await this.checkDrmOrientation(screen);
 
    if (this.drmForcesOrientation) {
       self.logger.warn(
-         logPrefix + ` Kernel already forces orientation → skipping xrandr`
+         logPrefix + ` Old panel_orientation detected in kernel cmdline. ` +
+         `Reboot required for proper xrandr rotation. Applying xrandr anyway (may double-rotate).`
       );
-   } else {
-      await this.applyRotation();
-      self.logger.info(logPrefix + ` Panel Rotation applied`);
    }
+   
+   // Always apply xrandr rotation (new config uses plymouth= not panel_orientation)
+   await this.applyRotation();
+   self.logger.info(logPrefix + ` Panel Rotation applied via xrandr`);
 
-   await this.applyTouchCorrection();  // skipDetection=true at boot
+   await this.applyTouchCorrection();
    await this.applyPointerCorrection();
    this.applyCursorSetting();
    self.setBrightness();
@@ -1190,14 +1196,6 @@ display_configuration.prototype.applyRotation = async function () {
    // Mapping from degrees to fbconv values
    const degreesToFbconv = { 0: 0, 90: 1, 180: 2, 270: 3 };
 
-   // Mapping from degrees to panel_orientation values
-   const degreesToPanelOrientation = {
-      0: "normal",
-      90: "left_side_up",
-      180: "upside_down",
-      270: "right_side_up"
-   };
-
    // Calculate display degrees
    let displayDegrees = rotationToDegrees[rotatescreen];
 
@@ -1209,51 +1207,32 @@ display_configuration.prototype.applyRotation = async function () {
    // Calculate plymouth rotation (boot splash)
    let plymouthOffsetDegrees = (plymouthOffset === "same") ? 0 : parseInt(plymouthOffset, 10);
    let plymouthDegrees = (displayDegrees + plymouthOffsetDegrees) % 360;
-   const orientation = degreesToPanelOrientation[plymouthDegrees];
 
    self.logger.info(logPrefix + ` TTY: display=${rotatescreen}(${displayDegrees}) + offset=${fbconOffset}(${fbconOffsetDegrees}) = ${fbconDegrees} deg (fbconv=${fbconv})`);
-   self.logger.info(logPrefix + ` Plymouth: display=${rotatescreen}(${displayDegrees}) + offset=${plymouthOffset}(${plymouthOffsetDegrees}) = ${plymouthDegrees} deg (po=${orientation})`);
+   self.logger.info(logPrefix + ` Plymouth: display=${rotatescreen}(${displayDegrees}) + offset=${plymouthOffset}(${plymouthOffsetDegrees}) = ${plymouthDegrees} deg`);
 
    const screen = await self.detectConnectedScreen();
 
-   let runtimeRotate = rotatescreen;
-
-   // If kernel already forces orientation, flip the runtime xrandr direction
-   if (this.drmForcesOrientation) {
-      if (rotatescreen === "normal") {
-         runtimeRotate = "inverted";
-      } else if (rotatescreen === "left") {
-         runtimeRotate = "right";
-      } else if (rotatescreen === "right") {
-         runtimeRotate = "left";
-      } else if (rotatescreen === "inverted") {
-         runtimeRotate = "normal";
-      }
-
-      self.logger.warn(
-         logPrefix + ` Kernel forces orientation for ${screen} - adjusting xrandr fake orientation`
-      );
-   }
-
-   // Always update boot config with calculated orientation
+   // Always update boot config with calculated values
+   // Using plymouth= instead of panel_orientation so X11 works correctly
    try {
-      await this.writeRotationConfig(screen, orientation, fbconv);
+      await this.writeRotationConfig(screen, plymouthDegrees, fbconv);
    } catch (err) {
       self.logger.error(logPrefix + " applyRotation grub error: " + err);
    }
 
-   //  Apply runtime rotation (possibly adjusted if kernel forces one)
+   //  Apply runtime rotation via xrandr
    if (!screen) {
       self.logger.error(logPrefix + " No connected screen detected, skipping rotation.");
       return;
    }
 
 
-   exec(`DISPLAY=${display} xrandr --output ${screen} --rotate ${runtimeRotate}`, (err, stdout, stderr) => {
+   exec(`DISPLAY=${display} xrandr --output ${screen} --rotate ${rotatescreen}`, (err, stdout, stderr) => {
       if (err) {
          self.logger.error(logPrefix + ` xrandr rotation failed: ${stderr || err.message}`);
       } else {
-         self.logger.info(logPrefix + ` Runtime rotation applied: ${runtimeRotate} | Boot config (po=${orientation}, fbconv=${fbconv})`);
+         self.logger.info(logPrefix + ` Runtime rotation applied: ${rotatescreen} | Boot config (plymouth=${plymouthDegrees}, fbconv=${fbconv})`);
       }
    });
 
@@ -1454,14 +1433,32 @@ display_configuration.prototype.applyPointerCorrection = async function () {
   const self = this;
   const display = self.getDisplaynumber();
 
-  // Get pointer_offset - default is "0" (none/identity) because xrandr handles mice automatically
+  // Get pointer_offset - default is "0" (none/identity)
   let pointerOffset = self.getConfigValue("pointer_offset", "0");
+  
+  self.logger.info(`${logPrefix} applyPointerCorrection: pointer_offset=${pointerOffset}`);
 
-  // If "0" or "none", skip - xrandr handles relative devices
+  // xrandr handles mouse transformation automatically for relative devices
+  // Only apply explicit offset if set
   if (pointerOffset === "0" || pointerOffset === "none") {
     self.logger.info(`${logPrefix} Pointer correction: none (xrandr handles relative devices)`);
     return;
   }
+
+  // Explicit offset requested - apply it
+  const offsetMatrices = {
+    "90":  "0 1 0  -1 0 1  0 0 1",
+    "180": "-1 0 1  0 -1 1  0 0 1",
+    "270": "0 -1 1  1 0 0  0 0 1"
+  };
+
+  const matrix = offsetMatrices[pointerOffset];
+  if (!matrix) {
+    self.logger.warn(`${logPrefix} Invalid pointer_offset '${pointerOffset}', skipping`);
+    return;
+  }
+
+  const logMsg = `offset ${pointerOffset}`;
 
   const execCmd = (cmd) =>
     new Promise((resolve, reject) => {
@@ -1481,19 +1478,6 @@ display_configuration.prototype.applyPointerCorrection = async function () {
       return;
     }
 
-    // Offset matrices (degrees)
-    const offsetMatrices = {
-      "90":  "0 1 0  -1 0 1  0 0 1",
-      "180": "-1 0 1  0 -1 1  0 0 1",
-      "270": "0 -1 1  1 0 0  0 0 1"
-    };
-
-    const matrix = offsetMatrices[pointerOffset];
-    if (!matrix) {
-      self.logger.warn(`${logPrefix} Invalid pointer_offset '${pointerOffset}', skipping`);
-      return;
-    }
-
     const deviceNames = pointerDevices.split("\n").filter(Boolean);
     for (const name of deviceNames) {
       try {
@@ -1501,7 +1485,7 @@ display_configuration.prototype.applyPointerCorrection = async function () {
         const id = idMatch.replace("id=", "").trim();
 
         await execCmd(`DISPLAY=${display} xinput set-prop ${id} "Coordinate Transformation Matrix" ${matrix}`);
-        self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) - offset ${pointerOffset}`);
+        self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) - ${logMsg}`);
       } catch (err) {
         self.logger.warn(`${logPrefix} Failed to correct pointer ${name}: ${err.message}`);
       }
