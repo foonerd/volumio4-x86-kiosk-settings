@@ -1026,9 +1026,29 @@ display_configuration.prototype.applyRotation = async function () {
       }
       exec(`DISPLAY=${display} xrandr --output ${screen} --rotate ${runtimeRotate}`);
       self.logger.info(logPrefix + ` Runtime rotation applied: ${runtimeRotate} | Boot config (po=${orientation}, fbconv=${fbconv})`);
+
+      // Also attempt fbcon rotation for console
+      self.applyFbconRotation(fbconv);
    } catch (err) {
       self.logger.error(logPrefix + " applyRotation error: " + err);
    }
+};
+
+// Apply fbcon rotation for console display
+display_configuration.prototype.applyFbconRotation = function (fbconValue) {
+   const self = this;
+
+   // fbcon rotate values: 0=normal, 1=90cw, 2=180, 3=90ccw
+   const rotateAllPath = '/sys/class/graphics/fbcon/rotate_all';
+
+   exec(`test -f ${rotateAllPath} && echo ${fbconValue} | sudo tee ${rotateAllPath}`, (err, stdout, stderr) => {
+      if (err) {
+         // This is expected on some hardware - not all systems support runtime fbcon rotation
+         self.logger.info(logPrefix + ` fbcon rotation not available or failed (this is normal on some hardware)`);
+      } else {
+         self.logger.info(logPrefix + ` fbcon console rotation set to ${fbconValue}`);
+      }
+   });
 };
 
 // Run a shell command and return output
