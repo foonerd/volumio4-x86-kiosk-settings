@@ -3,9 +3,7 @@
 
 var libQ = require('kew');
 var fs = require('fs-extra');
-var libFsExtra = require('fs-extra');
 var config = new (require('v-conf'))();
-//var exec = require('child_process').exec;
 const { exec } = require("child_process");
 
 var execSync = require('child_process').execSync;
