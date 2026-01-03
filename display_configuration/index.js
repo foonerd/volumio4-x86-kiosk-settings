@@ -152,46 +152,66 @@ display_configuration.prototype.getUIConfig = function () {
       __dirname + '/UIConfig.json')
       .then(async function (uiconf) {
 
+         // All settings in section 0
+         // [0] rotatescreen
          var rvalue = self.getConfigSelect('rotatescreen', { value: "normal", label: "Normal" });
-
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.value', rvalue.value);
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.label', rvalue.label);
 
+         // [1] brightness
+         var brightness = self.getConfigValue('brightness', 1);
+         uiconf.sections[0].content[1].config.bars[0].value = brightness;
+
+         // [2] touch_offset
+         var touchOffset = self.getConfigSelect('touch_offset', { value: "0", label: "None" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[2].value.value', touchOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[2].value.label', touchOffset.label);
+
+         // Hide touch_offset if no touch devices
          let touchDevices = await self.detectTouchscreen();
          if (!touchDevices || touchDevices.length === 0) {
-            uiconf.sections[0].content[1].hidden = true;
+            uiconf.sections[0].content[2].hidden = true;
          }
 
+         // [3] pointer_offset (default None - xrandr handles mice)
+         var pointerOffset = self.getConfigSelect('pointer_offset', { value: "0", label: "None" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[3].value.value', pointerOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[3].value.label', pointerOffset.label);
 
-         var tcvalue = self.getConfigSelect('touchcorrection', { value: "automatic", label: "Automatic" });
+         // [4] fbcon_offset (TTY console text)
+         var fbconOffset = self.getConfigSelect('fbcon_offset', { value: "same", label: "Same as Display" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.value', fbconOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.label', fbconOffset.label);
 
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[1].value.value', tcvalue.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[1].value.label', tcvalue.label);
+         // [5] plymouth_offset (boot splash)
+         var plymouthOffset = self.getConfigSelect('plymouth_offset', { value: "same", label: "Same as Display" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[5].value.value', plymouthOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[5].value.label', plymouthOffset.label);
 
-         var brightness = self.getConfigValue('brightness', 1);
-         uiconf.sections[0].content[2].config.bars[0].value = brightness;
-
-
+         // [6] hidecursor
          var hidecursor = self.getConfigValue('hidecursor', false);
-         uiconf.sections[0].content[3].value = hidecursor;
+         uiconf.sections[0].content[6].value = hidecursor;
 
-
+         // [7] screensavertype
          var xsvalue = self.getConfigSelect('screensavertype', { value: "dpms", label: "Turn the screen off" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[7].value.value', xsvalue.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[7].value.label', xsvalue.label);
 
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.value', xsvalue.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[4].value.label', xsvalue.label);
+         // [8] xscreensettings button - no value to set
 
-         uiconf.sections[0].content[6].value = self.getConfigValue('timeout', 120);
-         uiconf.sections[0].content[6].attributes = [
+         // [9] timeout
+         uiconf.sections[0].content[9].value = self.getConfigValue('timeout', 120);
+         uiconf.sections[0].content[9].attributes = [
             {
                placeholder: 120,
                maxlength: 4,
                min: 0,
-               max: 1000
+               max: 3600
             }
          ];
 
-         uiconf.sections[0].content[7].value = self.getConfigValue('noifplay', true);
+         // [10] noifplay
+         uiconf.sections[0].content[10].value = self.getConfigValue('noifplay', true);
 
          defer.resolve(uiconf);
       })
@@ -458,7 +478,7 @@ display_configuration.prototype.waitForKioskAndReapply = function () {
             // Wait for browser to fully initialize before re-applying
             setTimeout(async () => {
                try {
-                  await self.applyTouchCorrection(true);
+                  await self.applyTouchCorrection();
                   await self.applyPointerCorrection();
                   self.logger.info(logPrefix + ' Input settings re-applied after kiosk start');
                } catch (e) {
@@ -883,37 +903,52 @@ display_configuration.prototype.savescreensettings = function (data) {
 
    var brightness = data['brightness'] !== undefined ? data['brightness'] : 1;
 
-   // Parse rotation data with validation
+   // Parse rotation - now just a simple value
    let rotation = 'normal';
-   let fbconv = '0';
-   let po = 'normal';
    let rotateLabel = 'Normal';
 
    if (data['rotatescreen'] && data['rotatescreen'].value) {
-      const parts = data['rotatescreen'].value.split(":");
-      if (parts.length >= 3) {
-         rotation = parts[0] || 'normal';
-         fbconv = parts[1] || '0';
-         po = parts[2] || 'normal';
-      }
+      rotation = data['rotatescreen'].value;
       rotateLabel = data['rotatescreen'].label || rotation;
    }
 
    self.config.set('rotatescreen', {
       value: rotation,
-      fbconv: fbconv,
-      po: po,
       label: rotateLabel
    });
 
-   // Parse touchcorrection with validation
-   const tcValue = (data['touchcorrection'] && data['touchcorrection'].value) || 'automatic';
-   const tcLabel = (data['touchcorrection'] && data['touchcorrection'].label) || 'Automatic';
-
-   self.config.set('touchcorrection', {
-      value: tcValue,
-      label: tcLabel
+   // Save touch_offset
+   const touchOffsetValue = (data['touch_offset'] && data['touch_offset'].value) || '0';
+   const touchOffsetLabel = (data['touch_offset'] && data['touch_offset'].label) || 'None';
+   self.config.set('touch_offset', {
+      value: touchOffsetValue,
+      label: touchOffsetLabel
    });
+
+   // Save pointer_offset (default "0" = none, xrandr handles mice)
+   const pointerOffsetValue = (data['pointer_offset'] && data['pointer_offset'].value) || '0';
+   const pointerOffsetLabel = (data['pointer_offset'] && data['pointer_offset'].label) || 'None';
+   self.config.set('pointer_offset', {
+      value: pointerOffsetValue,
+      label: pointerOffsetLabel
+   });
+
+   // Save fbcon_offset (TTY console text)
+   const fbconOffsetValue = (data['fbcon_offset'] && data['fbcon_offset'].value) || 'same';
+   const fbconOffsetLabel = (data['fbcon_offset'] && data['fbcon_offset'].label) || 'Same as Display';
+   self.config.set('fbcon_offset', {
+      value: fbconOffsetValue,
+      label: fbconOffsetLabel
+   });
+
+   // Save plymouth_offset (boot splash)
+   const plymouthOffsetValue = (data['plymouth_offset'] && data['plymouth_offset'].value) || 'same';
+   const plymouthOffsetLabel = (data['plymouth_offset'] && data['plymouth_offset'].label) || 'Same as Display';
+   self.config.set('plymouth_offset', {
+      value: plymouthOffsetValue,
+      label: plymouthOffsetLabel
+   });
+
    self.config.set('brightness', brightness);
    self.config.set('hidecursor', data['hidecursor'] || false);
 
@@ -935,12 +970,12 @@ display_configuration.prototype.savescreensettings = function (data) {
             'Screensaver Timeout',
             'Value cannot be negative. Clamped to 0.'
          );
-      } else if (timeout > 1000) {
-         timeout = 1000;
+      } else if (timeout > 3600) {
+         timeout = 3600;
          self.commandRouter.pushToastMessage(
             'error',
             'Screensaver Timeout',
-            'Value too high. Clamped to 1000.'
+            'Value too high. Clamped to 3600.'
          );
       } else {
          self.commandRouter.pushToastMessage(
@@ -1005,7 +1040,7 @@ display_configuration.prototype.applyscreensettingsboot = async function () {
       self.logger.info(logPrefix + ` Panel Rotation applied`);
    }
 
-   await this.applyTouchCorrection(true);  // skipDetection=true at boot
+   await this.applyTouchCorrection();  // skipDetection=true at boot
    await this.applyPointerCorrection();
    this.applyCursorSetting();
    self.setBrightness();
@@ -1078,11 +1113,10 @@ display_configuration.prototype.applyRotation = async function () {
    const self = this;
    const display = self.getDisplaynumber();
 
-   // Handle both flat and nested config structures
-   const rawConf = self.config.get("rotatescreen") || {};
-   // If nested: {value: {value: x, fbconv: y}} vs flat: {value: x, fbconv: y}
-   const rotateConf = (rawConf.value && typeof rawConf.value === 'object') ? rawConf.value : rawConf;
-   let rotatescreen = rotateConf.value || "normal";
+   // Get rotation value from config
+   let rotatescreen = self.getConfigValue("rotatescreen", "normal");
+   let fbconOffset = self.getConfigValue("fbcon_offset", "same");
+   let plymouthOffset = self.getConfigValue("plymouth_offset", "same");
 
    // Validate rotation value
    const validRotations = ['normal', 'inverted', 'left', 'right'];
@@ -1091,26 +1125,58 @@ display_configuration.prototype.applyRotation = async function () {
       rotatescreen = "normal";
    }
 
-   // fallback mapping if fields are missing
-   const rotationMap = {
-      normal: { fbconv: 0, po: "normal" },
-      inverted: { fbconv: 2, po: "upside_down" },
-      right: { fbconv: 1, po: "left_side_up" },
-      left: { fbconv: 3, po: "right_side_up" }
+   // Validate offsets
+   const validOffsets = ['same', '0', '90', '180', '270'];
+   if (!validOffsets.includes(fbconOffset)) {
+      self.logger.warn(logPrefix + ` Invalid fbcon_offset '${fbconOffset}', using 'same'`);
+      fbconOffset = "same";
+   }
+   if (!validOffsets.includes(plymouthOffset)) {
+      self.logger.warn(logPrefix + ` Invalid plymouth_offset '${plymouthOffset}', using 'same'`);
+      plymouthOffset = "same";
+   }
+
+   // Mapping from rotation to degrees
+   const rotationToDegrees = {
+      normal: 0,
+      right: 90,
+      inverted: 180,
+      left: 270
    };
 
-   const map = rotationMap[rotatescreen] || rotationMap["normal"];
-   const fbconv = rotateConf.fbconv !== undefined ? rotateConf.fbconv : map.fbconv;
-   const orientation = rotateConf.po || map.po;   // <-- always used for grub config
+   // Mapping from degrees to fbconv values
+   const degreesToFbconv = { 0: 0, 90: 1, 180: 2, 270: 3 };
+
+   // Mapping from degrees to panel_orientation values
+   const degreesToPanelOrientation = {
+      0: "normal",
+      90: "left_side_up",
+      180: "upside_down",
+      270: "right_side_up"
+   };
+
+   // Calculate display degrees
+   let displayDegrees = rotationToDegrees[rotatescreen];
+
+   // Calculate fbcon rotation (TTY)
+   let fbconOffsetDegrees = (fbconOffset === "same") ? 0 : parseInt(fbconOffset, 10);
+   let fbconDegrees = (displayDegrees + fbconOffsetDegrees) % 360;
+   const fbconv = degreesToFbconv[fbconDegrees];
+
+   // Calculate plymouth rotation (boot splash)
+   let plymouthOffsetDegrees = (plymouthOffset === "same") ? 0 : parseInt(plymouthOffset, 10);
+   let plymouthDegrees = (displayDegrees + plymouthOffsetDegrees) % 360;
+   const orientation = degreesToPanelOrientation[plymouthDegrees];
+
+   self.logger.info(logPrefix + ` TTY: display=${rotatescreen}(${displayDegrees}) + offset=${fbconOffset}(${fbconOffsetDegrees}) = ${fbconDegrees} deg (fbconv=${fbconv})`);
+   self.logger.info(logPrefix + ` Plymouth: display=${rotatescreen}(${displayDegrees}) + offset=${plymouthOffset}(${plymouthOffsetDegrees}) = ${plymouthDegrees} deg (po=${orientation})`);
 
    const screen = await self.detectConnectedScreen();
 
-   //await this.checkDrmOrientation(screen);
    let runtimeRotate = rotatescreen;
 
-   // 2. Later reuse the stored value
+   // If kernel already forces orientation, flip the runtime xrandr direction
    if (this.drmForcesOrientation) {
-      // If kernel already forces orientation, flip the runtime xrandr direction
       if (rotatescreen === "normal") {
          runtimeRotate = "inverted";
       } else if (rotatescreen === "left") {
@@ -1122,11 +1188,11 @@ display_configuration.prototype.applyRotation = async function () {
       }
 
       self.logger.warn(
-         logPrefix + ` Kernel forces orientation for ${screen} → adjusting xrandr fake orientation`
+         logPrefix + ` Kernel forces orientation for ${screen} - adjusting xrandr fake orientation`
       );
    }
 
-   // Always update boot config with original orientation
+   // Always update boot config with calculated orientation
    try {
       await this.writeRotationConfig(screen, orientation, fbconv);
    } catch (err) {
@@ -1138,6 +1204,7 @@ display_configuration.prototype.applyRotation = async function () {
       self.logger.error(logPrefix + " No connected screen detected, skipping rotation.");
       return;
    }
+
 
    exec(`DISPLAY=${display} xrandr --output ${screen} --rotate ${runtimeRotate}`, (err, stdout, stderr) => {
       if (err) {
@@ -1344,7 +1411,15 @@ display_configuration.prototype.applyPointerCorrection = async function () {
   const self = this;
   const display = self.getDisplaynumber();
 
-  // simple async exec helper (no promisify)
+  // Get pointer_offset - default is "0" (none/identity) because xrandr handles mice automatically
+  let pointerOffset = self.getConfigValue("pointer_offset", "0");
+
+  // If "0" or "none", skip - xrandr handles relative devices
+  if (pointerOffset === "0" || pointerOffset === "none") {
+    self.logger.info(`${logPrefix} Pointer correction: none (xrandr handles relative devices)`);
+    return;
+  }
+
   const execCmd = (cmd) =>
     new Promise((resolve, reject) => {
       exec(cmd, (error, stdout, stderr) => {
@@ -1357,15 +1432,22 @@ display_configuration.prototype.applyPointerCorrection = async function () {
     });
 
   try {
-    const screen = await self.detectConnectedScreen();
-    if (!screen) {
-      self.logger.warn(`${logPrefix} No active screen found, skipping pointer correction.`);
-      return;
-    }
-
     const pointerDevices = await execCmd(`DISPLAY=${display} xinput list --name-only | grep -i mouse || true`);
     if (!pointerDevices) {
       self.logger.info(`${logPrefix} No pointer (mouse) devices detected.`);
+      return;
+    }
+
+    // Offset matrices (degrees)
+    const offsetMatrices = {
+      "90":  "0 1 0  -1 0 1  0 0 1",
+      "180": "-1 0 1  0 -1 1  0 0 1",
+      "270": "0 -1 1  1 0 0  0 0 1"
+    };
+
+    const matrix = offsetMatrices[pointerOffset];
+    if (!matrix) {
+      self.logger.warn(`${logPrefix} Invalid pointer_offset '${pointerOffset}', skipping`);
       return;
     }
 
@@ -1375,26 +1457,8 @@ display_configuration.prototype.applyPointerCorrection = async function () {
         const idMatch = await execCmd(`DISPLAY=${display} xinput list | grep -F "${name}" | grep -o "id=[0-9]*"`);
         const id = idMatch.replace("id=", "").trim();
 
-        // When kernel forces panel orientation, DRM/libinput already handles coordinate rotation
-        // Applying additional matrix would double-invert the coordinates
-        let matrix;
-        if (self.drmForcesOrientation) {
-          matrix = "1 0 0  0 1 0  0 0 1"; // identity - kernel handles rotation
-          self.logger.info(`${logPrefix} Kernel forces orientation - using identity matrix for pointer ${name} (id=${id})`);
-        } else {
-          // Align mouse coordinate transformation with screen orientation
-          const rotatescreen = self.getConfigValue("rotatescreen", "normal");
-          const matrixMap = {
-            normal:   "1 0 0  0 1 0  0 0 1",
-            inverted: "-1 0 1  0 -1 1  0 0 1",
-            left:     "0 -1 1  1 0 0  0 0 1",
-            right:    "0 1 0  -1 0 1  0 0 1"
-          };
-          matrix = matrixMap[rotatescreen] || matrixMap.normal;
-          self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) - ${rotatescreen}`);
-        }
-
         await execCmd(`DISPLAY=${display} xinput set-prop ${id} "Coordinate Transformation Matrix" ${matrix}`);
+        self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) - offset ${pointerOffset}`);
       } catch (err) {
         self.logger.warn(`${logPrefix} Failed to correct pointer ${name}: ${err.message}`);
       }
@@ -1404,26 +1468,28 @@ display_configuration.prototype.applyPointerCorrection = async function () {
   }
 };
 
-// 2. rotate touchsscreenn
-display_configuration.prototype.applyTouchCorrection = async function (skipDetection) {
+// 2. Apply touch correction based on display rotation + touch offset
+display_configuration.prototype.applyTouchCorrection = async function () {
    const self = this;
    const display = self.getDisplaynumber();
    const screen = await self.detectConnectedScreen();
-   let touchcorrection = self.getConfigValue("touchcorrection", "automatic");
+
+   // Get config values
    let rotatescreen = self.getConfigValue("rotatescreen", "normal");
+   let touchOffset = self.getConfigValue("touch_offset", "0");
 
-   // Validate touchcorrection value
-   const validTouchCorrections = ['automatic', 'none', 'swap-lr', 'swap-ud', 'swap-both'];
-   if (!validTouchCorrections.includes(touchcorrection)) {
-      self.logger.warn(logPrefix + ` Invalid touchcorrection value '${touchcorrection}', using 'automatic'`);
-      touchcorrection = "automatic";
-   }
-
-   // Validate rotatescreen value
+   // Validate rotatescreen
    const validRotations = ['normal', 'inverted', 'left', 'right'];
    if (!validRotations.includes(rotatescreen)) {
       self.logger.warn(logPrefix + ` Invalid rotatescreen value '${rotatescreen}', using 'normal'`);
       rotatescreen = "normal";
+   }
+
+   // Validate touch_offset (degrees as string)
+   const validOffsets = ['0', '90', '180', '270'];
+   if (!validOffsets.includes(touchOffset)) {
+      self.logger.warn(logPrefix + ` Invalid touch_offset value '${touchOffset}', using '0'`);
+      touchOffset = "0";
    }
 
    // Inline helper
@@ -1435,7 +1501,7 @@ display_configuration.prototype.applyTouchCorrection = async function (skipDetec
          });
       });
 
-   // rotation matrices (screen orientation)
+   // Rotation matrices for display
    const rotationMatrices = {
       normal:   [ [1,0,0], [0,1,0], [0,0,1] ],
       inverted: [ [-1,0,1], [0,-1,1], [0,0,1] ],
@@ -1443,7 +1509,15 @@ display_configuration.prototype.applyTouchCorrection = async function (skipDetec
       right:    [ [0,1,0], [-1,0,1], [0,0,1] ]
    };
 
-   // multiply two 3x3 matrices: result = A * B
+   // Offset matrices (additional rotation to compensate for hardware)
+   const offsetMatrices = {
+      "0":   [ [1,0,0], [0,1,0], [0,0,1] ],
+      "90":  [ [0,1,0], [-1,0,1], [0,0,1] ],
+      "180": [ [-1,0,1], [0,-1,1], [0,0,1] ],
+      "270": [ [0,-1,1], [1,0,0], [0,0,1] ]
+   };
+
+   // Matrix multiplication
    function multiplyMatrix(A, B) {
       const R = [[0,0,0],[0,0,0],[0,0,0]];
       for (let i=0;i<3;i++) {
@@ -1467,99 +1541,27 @@ display_configuration.prototype.applyTouchCorrection = async function (skipDetec
          return;
       }
 
-      // load persisted maps/inversions (objects)
-      const mappedObj = self.config.get("touch_mapped_output") || {};
-      const inversionMap = self.config.get("touch_inversion_by_id") || {};
+      // Compute final matrix: display rotation * touch offset
+      const rotMatrix = rotationMatrices[rotatescreen];
+      const offsetMatrix = offsetMatrices[touchOffset];
+      const finalMatrix = multiplyMatrix(rotMatrix, offsetMatrix);
+      const matrixStr = matrixToString(finalMatrix);
+
+      self.logger.info(`${logPrefix} Touch matrix: display=${rotatescreen}, offset=${touchOffset}, matrix=${matrixStr}`);
 
       for (let dev of touchDevices) {
          try {
-            // ensure dev.id is string key (config keys are strings)
-            const devKey = String(dev.id);
+            // Map device to output
+            await runCommand(`DISPLAY=${display} xinput --map-to-output ${dev.id} ${screen}`);
 
-            if (touchcorrection === "automatic") {
-               // 1) map device to output if not already mapped to this screen
-               if (mappedObj[devKey] !== screen) {
-                  await runCommand(`DISPLAY=${display} xinput --map-to-output ${dev.id} ${screen}`);
-                  mappedObj[devKey] = screen;
-                  self.config.set("touch_mapped_output", mappedObj);
-                  self.logger.info(`${logPrefix} Mapped ${dev.name} (id=${dev.id}) → ${screen} and saved mapping`);
-               } else {
-                  self.logger.info(`${logPrefix} ${dev.name} (id=${dev.id}) already mapped to ${screen}`);
-               }
-
-               // 2) detect inversion per-device if not saved
-               let inversion = inversionMap[devKey];
-               if (!inversion) {
-                  if (skipDetection) {
-                     // At boot: use safe defaults, don't block waiting for user input
-                     inversion = { invertX: false, invertY: false };
-                     self.logger.info(`${logPrefix} Boot mode: using default inversion for ${dev.name} id=${dev.id} (no stored value)`);
-                  } else {
-                     // User-triggered: perform interactive detection
-                     inversion = await self.detectTouchInversion(dev.id, screen);
-                     if (!inversion) inversion = { invertX: false, invertY: false };
-                     inversionMap[devKey] = inversion;
-                     self.config.set("touch_inversion_by_id", inversionMap);
-                     self.logger.info(`${logPrefix} Detected inversion for ${dev.name} id=${dev.id}: ${JSON.stringify(inversion)}`);
-                  }
-               } else {
-                  self.logger.info(`${logPrefix} Using stored inversion for ${dev.name} id=${dev.id}: ${JSON.stringify(inversion)}`);
-               }
-
-               // 3) build inversion matrix (hardware correction)
-               let inversionMatrix = [ [1,0,0],[0,1,0],[0,0,1] ];
-               if (inversion.invertX && inversion.invertY) {
-                  inversionMatrix = [ [-1,0,1],[0,-1,1],[0,0,1] ];
-               } else if (inversion.invertX) {
-                  inversionMatrix = [ [-1,0,1],[0,1,0],[0,0,1] ];
-               } else if (inversion.invertY) {
-                  inversionMatrix = [ [1,0,0],[0,-1,1],[0,0,1] ];
-               }
-
-               // 4) combine rotation (screen) and hardware inversion.
-               // Order: rotationMatrix * inversionMatrix  (first fix device, then rotate to screen)
-               const rotMatrix = rotationMatrices[rotatescreen] || rotationMatrices.normal;
-               const finalMatrix = multiplyMatrix(rotMatrix, inversionMatrix);
-               const matrixStr = matrixToString(finalMatrix);
-
-               // 5) apply final matrix
-               try {
-                  await runCommand(`DISPLAY=${display} xinput set-prop ${dev.id} "Coordinate Transformation Matrix" ${matrixStr}`);
-                  self.logger.info(`${logPrefix} Auto correction applied to ${dev.name} (id=${dev.id}) → matrix=${matrixStr}`);
-               } catch (e) {
-                  // fallback: warn but keep map-to-output (mapping preserved)
-                  self.logger.warn(`${logPrefix} Failed to apply matrix to ${dev.name} (id=${dev.id}). Mapping kept. Error: ${e.message}`);
-               }
-
-            } else {
-               // Manual modes — still map to output if we have previous mapping or prefer to map always for touchpad/touchscreen
-               if (mappedObj[devKey] !== screen) {
-                  // optional: map once even in manual mode (keeps input confined to screen)
-                  await runCommand(`DISPLAY=${display} xinput --map-to-output ${dev.id} ${screen}`);
-                  mappedObj[devKey] = screen;
-                  self.config.set("touch_mapped_output", mappedObj);
-                  self.logger.info(`${logPrefix} (manual) Mapped ${dev.name} (id=${dev.id}) → ${screen}`);
-               }
-
-               // Manual matrix selection
-               let matrix = "1 0 0  0 1 0  0 0 1";
-               switch (touchcorrection) {
-                  case "swap-lr": matrix = "0 -1 1  1 0 0  0 0 1"; break;
-                  case "swap-ud": matrix = "-1 0 1  0 -1 1  0 0 1"; break;
-                  case "swap-both": matrix = "0 1 0  -1 0 1  0 0 1"; break;
-                  case "none": default: break;
-               }
-
-               await runCommand(
-                  `DISPLAY=${display} xinput set-prop ${dev.id} "Coordinate Transformation Matrix" ${matrix}`
-               );
-               self.logger.info(`${logPrefix} Manual correction applied: ${touchcorrection} → ${dev.name} (id=${dev.id})`);
-            }
+            // Apply transformation matrix
+            await runCommand(`DISPLAY=${display} xinput set-prop ${dev.id} "Coordinate Transformation Matrix" ${matrixStr}`);
+            self.logger.info(`${logPrefix} Touch correction applied to ${dev.name} (id=${dev.id})`);
 
          } catch (err) {
-            self.logger.error(`${logPrefix} Failed to handle device ${dev.name} (id=${dev.id}): ${err.message}`);
+            self.logger.error(`${logPrefix} Failed to apply touch correction to ${dev.name} (id=${dev.id}): ${err.message}`);
          }
-      } // end for devices
+      }
    } catch (err) {
       self.logger.error(logPrefix + " applyTouchCorrection error: " + (err && err.message ? err.message : err));
    }

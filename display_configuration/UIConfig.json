@@ -4,8 +4,9 @@
   },
   "sections": [
     {
-      "id": "kiosk",
+      "id": "display",
       "element": "section",
+      "label": "TRANSLATE.DISPLAY_SECTION",
       "onSave": {
         "type": "controller",
         "endpoint": "user_interface/display_configuration",
@@ -15,12 +16,15 @@
         "label": "TRANSLATE.APPLY",
         "data": [
           "rotatescreen",
-          "touchcorrection",
+          "brightness",
+          "touch_offset",
+          "pointer_offset",
+          "fbcon_offset",
+          "plymouth_offset",
           "hidecursor",
-          "timeout",
-          "noifplay",
           "screensavertype",
-          "brightness"
+          "timeout",
+          "noifplay"
         ]
       },
       "content": [
@@ -30,57 +34,25 @@
           "doc": "TRANSLATE.DISPLAY_ROT_DOC",
           "label": "TRANSLATE.DISPLAY_ROT",
           "value": {
-            "value": "",
-            "label": ""
+            "value": "normal",
+            "label": "Normal"
           },
           "options": [
             {
-              "label": "TRANSLATE.NORMAL",
-              "value": "normal:0:up"
+              "value": "normal",
+              "label": "TRANSLATE.NORMAL"
             },
             {
-              "label": "TRANSLATE.INVERTED",
-              "value": "inverted:2:upside_down"
+              "value": "left",
+              "label": "TRANSLATE.LEFT"
             },
             {
-              "label": "TRANSLATE.LEFT",
-              "value": "left:3:right_side_up"
+              "value": "right",
+              "label": "TRANSLATE.RIGHT"
             },
             {
-              "label": "TRANSLATE.RIGHT",
-              "value": "right:1:left_side_up"
-            }
-          ]
-        },
-        {
-          "id": "touchcorrection",
-          "element": "select",
-          "doc": "TRANSLATE.TOUCH_ROT_DOC",
-          "label": "TRANSLATE.TOUCH_ROT",
-          "value": {
-            "value": "none",
-            "label": "none"
-          },
-          "options": [
-            {
-              "value": "automatic",
-              "label": "Automatic"
-            },
-            {
-              "value": "none",
-              "label": "TRANSLATE.TR_NONE"
-            },
-            {
-              "value": "swap-lr",
-              "label": "TRANSLATE.TR_SWLR"
-            },
-            {
-              "value": "swap-ud",
-              "label": "TRANSLATE.TR_SWUD"
-            },
-            {
-              "value": "swap-both",
-              "label": "TRANSLATE.TR_BOTH"
+              "value": "inverted",
+              "label": "TRANSLATE.INVERTED"
             }
           ]
         },
@@ -88,7 +60,7 @@
           "id": "brightness",
           "element": "equalizer",
           "label": "TRANSLATE.BRIGHTNESS",
-          "dOC": "TRANSLATE.BRIGHTNESS",
+          "doc": "TRANSLATE.BRIGHTNESS",
           "config": {
             "orientation": "horizontal",
             "bars": [
@@ -96,10 +68,130 @@
                 "min": "0",
                 "max": "1",
                 "step": "0.10",
-                "value": "0.5"
+                "value": "1"
               }
             ]
           }
+        },
+        {
+          "id": "touch_offset",
+          "element": "select",
+          "doc": "TRANSLATE.TOUCH_OFFSET_DOC",
+          "label": "TRANSLATE.TOUCH_OFFSET",
+          "value": {
+            "value": "0",
+            "label": "None"
+          },
+          "options": [
+            {
+              "value": "0",
+              "label": "TRANSLATE.ROT_NONE"
+            },
+            {
+              "value": "90",
+              "label": "TRANSLATE.ROT_90CW"
+            },
+            {
+              "value": "180",
+              "label": "TRANSLATE.ROT_180"
+            },
+            {
+              "value": "270",
+              "label": "TRANSLATE.ROT_90CCW"
+            }
+          ]
+        },
+        {
+          "id": "pointer_offset",
+          "element": "select",
+          "doc": "TRANSLATE.POINTER_OFFSET_DOC",
+          "label": "TRANSLATE.POINTER_OFFSET",
+          "value": {
+            "value": "0",
+            "label": "None"
+          },
+          "options": [
+            {
+              "value": "0",
+              "label": "TRANSLATE.ROT_NONE"
+            },
+            {
+              "value": "90",
+              "label": "TRANSLATE.ROT_90CW"
+            },
+            {
+              "value": "180",
+              "label": "TRANSLATE.ROT_180"
+            },
+            {
+              "value": "270",
+              "label": "TRANSLATE.ROT_90CCW"
+            }
+          ]
+        },
+        {
+          "id": "fbcon_offset",
+          "element": "select",
+          "doc": "TRANSLATE.FBCON_OFFSET_DOC",
+          "label": "TRANSLATE.FBCON_OFFSET",
+          "value": {
+            "value": "same",
+            "label": "Same as Display"
+          },
+          "options": [
+            {
+              "value": "same",
+              "label": "TRANSLATE.SAME_AS_DISPLAY"
+            },
+            {
+              "value": "0",
+              "label": "TRANSLATE.ROT_NONE"
+            },
+            {
+              "value": "90",
+              "label": "TRANSLATE.ROT_90CW"
+            },
+            {
+              "value": "180",
+              "label": "TRANSLATE.ROT_180"
+            },
+            {
+              "value": "270",
+              "label": "TRANSLATE.ROT_90CCW"
+            }
+          ]
+        },
+        {
+          "id": "plymouth_offset",
+          "element": "select",
+          "doc": "TRANSLATE.PLYMOUTH_OFFSET_DOC",
+          "label": "TRANSLATE.PLYMOUTH_OFFSET",
+          "value": {
+            "value": "same",
+            "label": "Same as Display"
+          },
+          "options": [
+            {
+              "value": "same",
+              "label": "TRANSLATE.SAME_AS_DISPLAY"
+            },
+            {
+              "value": "0",
+              "label": "TRANSLATE.ROT_NONE"
+            },
+            {
+              "value": "90",
+              "label": "TRANSLATE.ROT_90CW"
+            },
+            {
+              "value": "180",
+              "label": "TRANSLATE.ROT_180"
+            },
+            {
+              "value": "270",
+              "label": "TRANSLATE.ROT_90CCW"
+            }
+          ]
         },
         {
           "id": "hidecursor",
@@ -114,8 +206,8 @@
           "doc": "TRANSLATE.XSTYPE_DOC",
           "label": "TRANSLATE.XSTYPE",
           "value": {
-            "value": "",
-            "label": ""
+            "value": "dpms",
+            "label": "Turn the screen off"
           },
           "options": [
             {
@@ -146,11 +238,11 @@
           "id": "timeout",
           "element": "input",
           "type": "number",
-          "doc": "Set the duration before screensaver in seconds. 0 = no screensaver ",
+          "doc": "TRANSLATE.SCREENSAVER_DOC",
           "label": "TRANSLATE.SCREENSAVER",
           "attributes": [
             {
-              "placeholder": {}
+              "placeholder": 120
             },
             {
               "maxlength": 4
@@ -178,14 +270,15 @@
       ]
     },
     {
-      "id": "kioskdebug",
+      "id": "debug",
       "element": "section",
+      "label": "TRANSLATE.DEBUG_SECTION",
       "content": [
         {
           "id": "generate_diagnostics",
           "element": "button",
-          "label": "Generate Diagnostic Report",
-          "doc": "Creates /tmp/volumio-display-diagnostics.txt for troubleshooting. Use this to help debug display issues.",
+          "label": "TRANSLATE.GENERATE_DIAG",
+          "doc": "TRANSLATE.GENERATE_DIAG_DOC",
           "onClick": {
             "type": "plugin",
             "endpoint": "user_interface/display_configuration",
