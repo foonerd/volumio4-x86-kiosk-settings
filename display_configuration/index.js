@@ -307,6 +307,24 @@ display_configuration.prototype.writeRotationConfig = function (screen, orientat
    const self = this;
 
    return new Promise((resolve, reject) => {
+      // Validate parameters
+      if (!screen || typeof screen !== 'string') {
+         self.logger.error(logPrefix + " writeRotationConfig: invalid screen parameter");
+         return reject(new Error("Invalid screen parameter"));
+      }
+
+      const validOrientations = ['normal', 'upside_down', 'left_side_up', 'right_side_up'];
+      if (!validOrientations.includes(orientation)) {
+         self.logger.warn(logPrefix + ` writeRotationConfig: unknown orientation '${orientation}', using 'normal'`);
+         orientation = 'normal';
+      }
+
+      const fbValue = parseInt(fbRotate, 10);
+      if (isNaN(fbValue) || fbValue < 0 || fbValue > 3) {
+         self.logger.warn(logPrefix + ` writeRotationConfig: invalid fbRotate '${fbRotate}', using 0`);
+         fbRotate = 0;
+      }
+
       // Always overwrite with the new values
       const content =
          `set screen=video=${screen}:panel_orientation=${orientation}\n` +
@@ -545,12 +563,16 @@ display_configuration.prototype.monitorLid = function () {
 
          if (anyClosed && !lidClosed) {
             lidClosed = true;
-            self.logger.info(logPrefix + " Lid closed — turning screen off via DPMS");
-            exec(`/usr/bin/xset -display ${display} dpms force off`);
+            self.logger.info(logPrefix + " Lid closed - turning screen off via DPMS");
+            exec(`/usr/bin/xset -display ${display} dpms force off`, (err) => {
+               if (err) self.logger.warn(logPrefix + " DPMS force off failed: " + err.message);
+            });
          } else if (!anyClosed && lidClosed) {
             lidClosed = false;
-            self.logger.info(logPrefix + " Lid opened — turning screen on via DPMS");
-            exec(`/usr/bin/xset -display ${display} dpms force on`);
+            self.logger.info(logPrefix + " Lid opened - turning screen on via DPMS");
+            exec(`/usr/bin/xset -display ${display} dpms force on`, (err) => {
+               if (err) self.logger.warn(logPrefix + " DPMS force on failed: " + err.message);
+            });
          }
       } catch (err) {
          self.logger.error("Error reading lid state: " + err);
@@ -627,8 +649,13 @@ display_configuration.prototype.sleepScreen = function () {
    try {
       if (screensavertype === "dpms") {
          // Put screen to sleep via DPMS
-         exec(`/usr/bin/xset -display ${display} s 0 0 +dpms dpms 0 0 ${timeout}`);
-         self.logger.info(logPrefix + " sleepScreen: DPMS → screen off in " + timeout + "s");
+         exec(`/usr/bin/xset -display ${display} s 0 0 +dpms dpms 0 0 ${timeout}`, (err) => {
+            if (err) {
+               self.logger.error(logPrefix + " sleepScreen: DPMS command failed: " + err.message);
+            } else {
+               self.logger.info(logPrefix + " sleepScreen: DPMS - screen off in " + timeout + "s");
+            }
+         });
 
       } else if (screensavertype === "xscreensaver") {
          // stop keepalive when we want xscreensaver active
@@ -670,8 +697,13 @@ display_configuration.prototype.wakeupScreen = function () {
       if (screensavertype === "dpms") {
 
          // Wake DPMS screen
-         exec(`/usr/bin/xset -display ${display} -dpms`);
-         self.logger.info(logPrefix + " wakeupScreen: DPMS → screen on");
+         exec(`/usr/bin/xset -display ${display} -dpms`, (err) => {
+            if (err) {
+               self.logger.error(logPrefix + " wakeupScreen: DPMS command failed: " + err.message);
+            } else {
+               self.logger.info(logPrefix + " wakeupScreen: DPMS - screen on");
+            }
+         });
 
       } else if (screensavertype === "xscreensaver") {
          // tell xscreensaver to disable blanking (instead of killing)
@@ -843,23 +875,47 @@ display_configuration.prototype.setBrightness = function () {
 display_configuration.prototype.savescreensettings = function (data) {
    const self = this;
 
-   var brightness = (data['brightness']);
-   //      self.logger.error(logPrefix + " setBrightness error: " + brightness);
-   const [rotation, fbconv, po] = data['rotatescreen'].value.split(":");
+   // Validate incoming data
+   if (!data) {
+      self.logger.error(logPrefix + " savescreensettings: no data received");
+      return;
+   }
+
+   var brightness = data['brightness'] !== undefined ? data['brightness'] : 1;
+
+   // Parse rotation data with validation
+   let rotation = 'normal';
+   let fbconv = '0';
+   let po = 'normal';
+   let rotateLabel = 'Normal';
+
+   if (data['rotatescreen'] && data['rotatescreen'].value) {
+      const parts = data['rotatescreen'].value.split(":");
+      if (parts.length >= 3) {
+         rotation = parts[0] || 'normal';
+         fbconv = parts[1] || '0';
+         po = parts[2] || 'normal';
+      }
+      rotateLabel = data['rotatescreen'].label || rotation;
+   }
 
    self.config.set('rotatescreen', {
       value: rotation,
       fbconv: fbconv,
       po: po,
-      label: data['rotatescreen'].label
+      label: rotateLabel
    });
 
+   // Parse touchcorrection with validation
+   const tcValue = (data['touchcorrection'] && data['touchcorrection'].value) || 'automatic';
+   const tcLabel = (data['touchcorrection'] && data['touchcorrection'].label) || 'Automatic';
+
    self.config.set('touchcorrection', {
-      value: data['touchcorrection'].value,
-      label: data['touchcorrection'].label
+      value: tcValue,
+      label: tcLabel
    });
-   self.config.set('brightness', brightness)
-   self.config.set('hidecursor', data['hidecursor']);
+   self.config.set('brightness', brightness);
+   self.config.set('hidecursor', data['hidecursor'] || false);
 
    // validate timeout
    let timeout = parseInt(data['timeout'], 10);
@@ -1025,7 +1081,14 @@ display_configuration.prototype.applyRotation = async function () {
    const rawConf = self.config.get("rotatescreen") || {};
    // If nested: {value: {value: x, fbconv: y}} vs flat: {value: x, fbconv: y}
    const rotateConf = (rawConf.value && typeof rawConf.value === 'object') ? rawConf.value : rawConf;
-   const rotatescreen = rotateConf.value || "normal";
+   let rotatescreen = rotateConf.value || "normal";
+
+   // Validate rotation value
+   const validRotations = ['normal', 'inverted', 'left', 'right'];
+   if (!validRotations.includes(rotatescreen)) {
+      self.logger.warn(logPrefix + ` Invalid rotation value '${rotatescreen}', using 'normal'`);
+      rotatescreen = "normal";
+   }
 
    // fallback mapping if fields are missing
    const rotationMap = {
@@ -1070,19 +1133,21 @@ display_configuration.prototype.applyRotation = async function () {
    }
 
    //  Apply runtime rotation (possibly adjusted if kernel forces one)
-   try {
-      if (!screen) {
-         self.logger.error(logPrefix + " No connected screen detected, skipping rotation.");
-         return;
-      }
-      exec(`DISPLAY=${display} xrandr --output ${screen} --rotate ${runtimeRotate}`);
-      self.logger.info(logPrefix + ` Runtime rotation applied: ${runtimeRotate} | Boot config (po=${orientation}, fbconv=${fbconv})`);
-
-      // Also attempt fbcon rotation for console
-      self.applyFbconRotation(fbconv);
-   } catch (err) {
-      self.logger.error(logPrefix + " applyRotation error: " + err);
+   if (!screen) {
+      self.logger.error(logPrefix + " No connected screen detected, skipping rotation.");
+      return;
    }
+
+   exec(`DISPLAY=${display} xrandr --output ${screen} --rotate ${runtimeRotate}`, (err, stdout, stderr) => {
+      if (err) {
+         self.logger.error(logPrefix + ` xrandr rotation failed: ${stderr || err.message}`);
+      } else {
+         self.logger.info(logPrefix + ` Runtime rotation applied: ${runtimeRotate} | Boot config (po=${orientation}, fbconv=${fbconv})`);
+      }
+   });
+
+   // Also attempt fbcon rotation for console
+   self.applyFbconRotation(fbconv);
 };
 
 // Apply fbcon rotation for console display
@@ -1335,8 +1400,22 @@ display_configuration.prototype.applyTouchCorrection = async function (skipDetec
    const self = this;
    const display = self.getDisplaynumber();
    const screen = await self.detectConnectedScreen();
-   const touchcorrection = self.getConfigValue("touchcorrection", "automatic");
-   const rotatescreen = self.getConfigValue("rotatescreen", "normal");
+   let touchcorrection = self.getConfigValue("touchcorrection", "automatic");
+   let rotatescreen = self.getConfigValue("rotatescreen", "normal");
+
+   // Validate touchcorrection value
+   const validTouchCorrections = ['automatic', 'none', 'swap_x', 'swap_y', 'swap_both'];
+   if (!validTouchCorrections.includes(touchcorrection)) {
+      self.logger.warn(logPrefix + ` Invalid touchcorrection value '${touchcorrection}', using 'automatic'`);
+      touchcorrection = "automatic";
+   }
+
+   // Validate rotatescreen value
+   const validRotations = ['normal', 'inverted', 'left', 'right'];
+   if (!validRotations.includes(rotatescreen)) {
+      self.logger.warn(logPrefix + ` Invalid rotatescreen value '${rotatescreen}', using 'normal'`);
+      rotatescreen = "normal";
+   }
 
    // Inline helper
    const runCommand = (cmd) =>
