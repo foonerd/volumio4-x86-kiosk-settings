@@ -52,14 +52,20 @@ display_configuration.prototype.onStart = function () {
    self.socket = io.connect('http://localhost:3000');
    self.fixXauthority();
 
-   // Delay to ensure X server is ready
-
-   setTimeout(async function () {
+   // Wait for X server to be ready before applying settings
+   self.waitForXServer().then(() => {
       self.checkIfPlay();
-      const display = self.getDisplaynumber();
-      await self.applyscreensettingsboot();
-      self.monitorLid(); // start monitoring lid events
-   }, 100);
+      self.applyscreensettingsboot();
+      self.monitorLid();
+   }).catch((err) => {
+      self.logger.error(logPrefix + ' X server wait failed: ' + err.message);
+      // Fallback: try anyway after delay
+      setTimeout(() => {
+         self.checkIfPlay();
+         self.applyscreensettingsboot();
+         self.monitorLid();
+      }, 5000);
+   });
 
    defer.resolve();
    return defer.promise;
@@ -324,6 +330,43 @@ display_configuration.prototype.fixXauthority = function () {
          self.logger.info(logPrefix + " fixXauthority: /home/volumio/.Xauthority updated");
          resolve(stdout);
       });
+   });
+};
+
+// Wait for X server to be ready with retries
+display_configuration.prototype.waitForXServer = function () {
+   const self = this;
+   const maxRetries = 30;
+   const retryDelay = 1000;
+
+   return new Promise((resolve, reject) => {
+      let attempt = 0;
+
+      const tryConnect = () => {
+         attempt++;
+         const display = self.getDisplaynumber();
+
+         // Test X server with xset command
+         exec(`DISPLAY=${display} xset q`, { timeout: 3000 }, (err) => {
+            if (!err) {
+               self.logger.info(logPrefix + ` X server ready after ${attempt} attempt(s)`);
+               resolve();
+               return;
+            }
+
+            if (attempt >= maxRetries) {
+               self.logger.warn(logPrefix + ` X server not ready after ${maxRetries} attempts, proceeding anyway`);
+               resolve(); // resolve anyway to allow fallback behavior
+               return;
+            }
+
+            self.logger.info(logPrefix + ` Waiting for X server (attempt ${attempt}/${maxRetries})...`);
+            setTimeout(tryConnect, retryDelay);
+         });
+      };
+
+      // Start first attempt after initial delay
+      setTimeout(tryConnect, 500);
    });
 };
 
