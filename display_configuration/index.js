@@ -889,18 +889,15 @@ display_configuration.prototype.setBrightness = function () {
 
 
 
-display_configuration.prototype.savescreensettings = function (data) {
+display_configuration.prototype.saveDeviceRotation = function (data) {
    const self = this;
 
-   // Validate incoming data
    if (!data) {
-      self.logger.error(logPrefix + " savescreensettings: no data received");
+      self.logger.error(logPrefix + " saveDeviceRotation: no data received");
       return;
    }
 
-   var brightness = data['brightness'] !== undefined ? data['brightness'] : 1;
-
-   // Parse rotation - now just a simple value
+   // Parse rotation
    let rotation = 'normal';
    let rotateLabel = 'Normal';
 
@@ -914,6 +911,27 @@ display_configuration.prototype.savescreensettings = function (data) {
       label: rotateLabel
    });
 
+   // Save brightness
+   var brightness = data['brightness'] !== undefined ? data['brightness'] : 1;
+   self.config.set('brightness', brightness);
+
+   self.commandRouter.pushToastMessage("success", "Device Rotation", "Settings applied!");
+
+   setTimeout(function () {
+      self.refreshUI();
+      self.applyscreensettings();
+   }, 100);
+};
+
+
+display_configuration.prototype.saveCalibration = function (data) {
+   const self = this;
+
+   if (!data) {
+      self.logger.error(logPrefix + " saveCalibration: no data received");
+      return;
+   }
+
    // Save touch_offset
    const touchOffsetValue = (data['touch_offset'] && data['touch_offset'].value) || '0';
    const touchOffsetLabel = (data['touch_offset'] && data['touch_offset'].label) || 'None';
@@ -922,7 +940,7 @@ display_configuration.prototype.savescreensettings = function (data) {
       label: touchOffsetLabel
    });
 
-   // Save pointer_offset (default "0" = none, xrandr handles mice)
+   // Save pointer_offset
    const pointerOffsetValue = (data['pointer_offset'] && data['pointer_offset'].value) || '0';
    const pointerOffsetLabel = (data['pointer_offset'] && data['pointer_offset'].label) || 'None';
    self.config.set('pointer_offset', {
@@ -930,26 +948,42 @@ display_configuration.prototype.savescreensettings = function (data) {
       label: pointerOffsetLabel
    });
 
-   // Save fbcon_offset (TTY console text)
+   // Save fbcon_offset
    const fbconOffsetValue = (data['fbcon_offset'] && data['fbcon_offset'].value) || 'same';
-   const fbconOffsetLabel = (data['fbcon_offset'] && data['fbcon_offset'].label) || 'Same as Display';
+   const fbconOffsetLabel = (data['fbcon_offset'] && data['fbcon_offset'].label) || 'Same as Device';
    self.config.set('fbcon_offset', {
       value: fbconOffsetValue,
       label: fbconOffsetLabel
    });
 
-   // Save plymouth_offset (boot splash)
+   // Save plymouth_offset
    const plymouthOffsetValue = (data['plymouth_offset'] && data['plymouth_offset'].value) || 'same';
-   const plymouthOffsetLabel = (data['plymouth_offset'] && data['plymouth_offset'].label) || 'Same as Display';
+   const plymouthOffsetLabel = (data['plymouth_offset'] && data['plymouth_offset'].label) || 'Same as Device';
    self.config.set('plymouth_offset', {
       value: plymouthOffsetValue,
       label: plymouthOffsetLabel
    });
 
-   self.config.set('brightness', brightness);
+   self.commandRouter.pushToastMessage("success", "Hardware Calibration", "Settings applied! TTY and Plymouth changes take effect on reboot.");
+
+   setTimeout(function () {
+      self.refreshUI();
+      self.applyscreensettings();
+   }, 100);
+};
+
+
+display_configuration.prototype.saveScreensaver = function (data) {
+   const self = this;
+
+   if (!data) {
+      self.logger.error(logPrefix + " saveScreensaver: no data received");
+      return;
+   }
+
    self.config.set('hidecursor', data['hidecursor'] || false);
 
-   // validate timeout
+   // Validate timeout
    let timeout = parseInt(data['timeout'], 10);
    if (isNaN(timeout)) {
       timeout = 120;
@@ -975,29 +1009,30 @@ display_configuration.prototype.savescreensettings = function (data) {
             'Value too high. Clamped to 3600.'
          );
       } else {
-         self.commandRouter.pushToastMessage(
-            "success",
-            "Settings applied!"
-         );
-
+         self.commandRouter.pushToastMessage("success", "Screensaver", "Settings applied!");
       }
       self.config.set('timeout', timeout);
    }
-   self.config.set('screensavertype', {
-      value: data['screensavertype'].value,
-      label: data['screensavertype'].label
-   });
+
+   if (data['screensavertype'] && data['screensavertype'].value) {
+      self.config.set('screensavertype', {
+         value: data['screensavertype'].value,
+         label: data['screensavertype'].label
+      });
+   }
+
    self.config.set('noifplay', data.noifplay);
 
    if (timeout === 0) {
       self.wakeupScreen();
    }
+
    setTimeout(function () {
       self.refreshUI();
       self.checkIfPlay();
       self.applyscreensettings();
 
-      if (data['screensavertype'].value === 'dpms') {
+      if (data['screensavertype'] && data['screensavertype'].value === 'dpms') {
          exec("pkill -f xscreensaver-settings || true");
          exec("pkill -f xscreensaver || true");
       }
@@ -1016,7 +1051,18 @@ display_configuration.prototype.savescreensettings = function (data) {
          self.logger.error(logPrefix + " Failed to apply screensaver immediately: " + err);
       }
    }, 100);
+};
 
+
+// Legacy method for backward compatibility
+display_configuration.prototype.savescreensettings = function (data) {
+   const self = this;
+   self.logger.warn(logPrefix + " savescreensettings called - using legacy compatibility mode");
+   
+   // Call all three save methods
+   self.saveDeviceRotation(data);
+   self.saveCalibration(data);
+   self.saveScreensaver(data);
 };
 
 

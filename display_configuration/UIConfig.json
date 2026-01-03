@@ -10,21 +10,13 @@
       "onSave": {
         "type": "controller",
         "endpoint": "user_interface/display_configuration",
-        "method": "savescreensettings"
+        "method": "saveDeviceRotation"
       },
       "saveButton": {
         "label": "TRANSLATE.APPLY",
         "data": [
           "rotatescreen",
-          "brightness",
-          "touch_offset",
-          "pointer_offset",
-          "fbcon_offset",
-          "plymouth_offset",
-          "hidecursor",
-          "screensavertype",
-          "timeout",
-          "noifplay"
+          "brightness"
         ]
       },
       "content": [
@@ -80,6 +72,20 @@
       "element": "section",
       "label": "TRANSLATE.CALIBRATION_SECTION",
       "description": "TRANSLATE.CALIBRATION_SECTION_DOC",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "user_interface/display_configuration",
+        "method": "saveCalibration"
+      },
+      "saveButton": {
+        "label": "TRANSLATE.APPLY",
+        "data": [
+          "touch_offset",
+          "pointer_offset",
+          "fbcon_offset",
+          "plymouth_offset"
+        ]
+      },
       "content": [
         {
           "id": "touch_offset",
@@ -207,6 +213,20 @@
       "id": "screensaver",
       "element": "section",
       "label": "TRANSLATE.SCREENSAVER_SECTION",
+      "onSave": {
+        "type": "controller",
+        "endpoint": "user_interface/display_configuration",
+        "method": "saveScreensaver"
+      },
+      "saveButton": {
+        "label": "TRANSLATE.APPLY",
+        "data": [
+          "hidecursor",
+          "screensavertype",
+          "timeout",
+          "noifplay"
+        ]
+      },
       "content": [
         {
           "id": "hidecursor",
