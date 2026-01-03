@@ -4,13 +4,13 @@
             "value": "normal",
             "po":"normal",
             "fbconv":"0",
-            "label": "Normal 🖥️"
+            "label": "Normal"
         }
     },
     "touchcorrection": {
         "value": {
             "value": "automatic",
-            "label": "Automatic 🤖"
+            "label": "Automatic"
         }
     },
     "hidecursor": {
