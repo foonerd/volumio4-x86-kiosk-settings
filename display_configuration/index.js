@@ -22,11 +22,8 @@ function display_configuration(context) {
    var self = this;
    self.context = context;
    self.commandRouter = self.context.coreCommand;
-   self.logger = self.commandRouter.logger;
-   this.context = context;
-   this.commandRouter = this.context.coreCommand;
-   this.logger = this.context.logger;
-   this.configManager = this.context.configManager;
+   self.logger = self.context.logger;
+   self.configManager = self.context.configManager;
 };
 
 display_configuration.prototype.onVolumioStart = function () {
