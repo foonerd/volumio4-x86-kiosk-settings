@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Unistalling"
-#sudo rm /etc/systemd/system/vkiosksettings.service
+echo "Uninstalling display_configuration"
+
 echo "Done"
 echo "pluginuninstallend"
