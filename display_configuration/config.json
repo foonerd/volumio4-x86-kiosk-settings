@@ -42,9 +42,5 @@
     "brightness": {
         "type": "number",
         "value": 1
-    },
-    "virtualKeyboard": {
-        "type": "boolean",
-        "value": true
     }
 }

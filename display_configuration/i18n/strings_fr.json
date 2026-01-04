@@ -45,9 +45,5 @@
 
     "DEBUG_SECTION": "Diagnostics",
     "GENERATE_DIAG": "Generer un rapport de diagnostic",
-    "GENERATE_DIAG_DOC": "Cree un rapport de diagnostic pour resoudre les problemes d'affichage.",
-
-    "KEYBOARD_SECTION": "Clavier a l'ecran",
-    "VIRTUAL_KEYBOARD": "Activer le clavier a l'ecran",
-    "VIRTUAL_KEYBOARD_DOC": "Afficher le clavier virtuel lors de la saisie de texte. Necessite un redemarrage du kiosk."
+    "GENERATE_DIAG_DOC": "Cree un rapport de diagnostic pour resoudre les problemes d'affichage."
 }

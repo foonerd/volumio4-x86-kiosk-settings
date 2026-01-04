@@ -45,9 +45,5 @@
 
     "DEBUG_SECTION": "Diagnose",
     "GENERATE_DIAG": "Diagnosebericht erstellen",
-    "GENERATE_DIAG_DOC": "Erstellt einen Diagnosebericht zur Fehlerbehebung bei Anzeigeproblemen.",
-
-    "KEYBOARD_SECTION": "Bildschirmtastatur",
-    "VIRTUAL_KEYBOARD": "Bildschirmtastatur aktivieren",
-    "VIRTUAL_KEYBOARD_DOC": "Virtuelle Tastatur bei Beruehrung von Textfeldern anzeigen. Erfordert Kiosk-Neustart."
+    "GENERATE_DIAG_DOC": "Erstellt einen Diagnosebericht zur Fehlerbehebung bei Anzeigeproblemen."
 }

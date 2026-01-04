@@ -45,9 +45,5 @@
 
     "DEBUG_SECTION": "Diagnostica",
     "GENERATE_DIAG": "Genera rapporto diagnostico",
-    "GENERATE_DIAG_DOC": "Crea un rapporto diagnostico per la risoluzione dei problemi di visualizzazione.",
-
-    "KEYBOARD_SECTION": "Tastiera su schermo",
-    "VIRTUAL_KEYBOARD": "Attiva tastiera su schermo",
-    "VIRTUAL_KEYBOARD_DOC": "Mostra la tastiera virtuale quando si toccano i campi di testo. Richiede il riavvio del kiosk."
+    "GENERATE_DIAG_DOC": "Crea un rapporto diagnostico per la risoluzione dei problemi di visualizzazione."
 }
