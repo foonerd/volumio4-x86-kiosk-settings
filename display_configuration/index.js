@@ -1578,6 +1578,13 @@ display_configuration.prototype.applyTouchCorrection = async function () {
 
       for (let dev of touchDevices) {
          try {
+            // Check if device supports Coordinate Transformation Matrix
+            const propsOutput = await runCommand(`DISPLAY=${display} xinput list-props ${dev.id}`);
+            if (!propsOutput.includes("Coordinate Transformation Matrix")) {
+               self.logger.info(`${logPrefix} Skipping ${dev.name} (id=${dev.id}) - no transformation matrix support (likely stylus/pen)`);
+               continue;
+            }
+
             // Map device to output
             await runCommand(`DISPLAY=${display} xinput --map-to-output ${dev.id} ${screen}`);
 
