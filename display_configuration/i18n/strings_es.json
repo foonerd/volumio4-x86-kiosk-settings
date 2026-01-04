@@ -45,5 +45,9 @@
 
     "DEBUG_SECTION": "Diagnosticos",
     "GENERATE_DIAG": "Generar informe de diagnostico",
-    "GENERATE_DIAG_DOC": "Crea un informe de diagnostico para solucionar problemas de pantalla."
+    "GENERATE_DIAG_DOC": "Crea un informe de diagnostico para solucionar problemas de pantalla.",
+
+    "KEYBOARD_SECTION": "Teclado en pantalla",
+    "VIRTUAL_KEYBOARD": "Activar teclado en pantalla",
+    "VIRTUAL_KEYBOARD_DOC": "Mostrar teclado virtual al tocar campos de texto. Requiere reinicio del kiosk."
 }

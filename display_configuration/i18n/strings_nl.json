@@ -45,5 +45,9 @@
 
     "DEBUG_SECTION": "Diagnostiek",
     "GENERATE_DIAG": "Genereer diagnostisch rapport",
-    "GENERATE_DIAG_DOC": "Maakt een diagnostisch rapport voor het oplossen van schermproblemen."
+    "GENERATE_DIAG_DOC": "Maakt een diagnostisch rapport voor het oplossen van schermproblemen.",
+
+    "KEYBOARD_SECTION": "Schermtoetsenbord",
+    "VIRTUAL_KEYBOARD": "Schermtoetsenbord inschakelen",
+    "VIRTUAL_KEYBOARD_DOC": "Toon virtueel toetsenbord bij het aanraken van tekstvelden. Vereist kiosk-herstart."
 }

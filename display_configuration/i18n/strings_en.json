@@ -45,5 +45,9 @@
 
     "DEBUG_SECTION": "Diagnostics",
     "GENERATE_DIAG": "Generate Diagnostic Report",
-    "GENERATE_DIAG_DOC": "Creates diagnostic report for troubleshooting display issues."
+    "GENERATE_DIAG_DOC": "Creates diagnostic report for troubleshooting display issues.",
+
+    "KEYBOARD_SECTION": "On-Screen Keyboard",
+    "VIRTUAL_KEYBOARD": "Enable On-Screen Keyboard",
+    "VIRTUAL_KEYBOARD_DOC": "Show virtual keyboard when touching text fields. Requires kiosk restart."
 }

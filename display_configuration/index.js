@@ -221,7 +221,12 @@ display_configuration.prototype.getUIConfig = function () {
 
          uiconf.sections[2].content[4].value = self.getConfigValue('noifplay', true);
 
-         // Section 3: Diagnostics - just button, no values
+         // Section 3: On-Screen Keyboard
+         // [0] virtualKeyboard
+         var virtualKeyboard = self.getConfigValue('virtualKeyboard', true);
+         uiconf.sections[3].content[0].value = virtualKeyboard;
+
+         // Section 4: Diagnostics - just button, no values
 
          defer.resolve(uiconf);
       })
@@ -1070,6 +1075,53 @@ display_configuration.prototype.saveScreensaver = function (data) {
          self.logger.error(logPrefix + " Failed to apply screensaver immediately: " + err);
       }
    }, 100);
+};
+
+
+display_configuration.prototype.saveKeyboard = function (data) {
+   const self = this;
+
+   if (!data) {
+      self.logger.error(logPrefix + " saveKeyboard: no data received");
+      return;
+   }
+
+   const newValue = data['virtualKeyboard'] || false;
+   const currentValue = self.getConfigValue('virtualKeyboard', true);
+
+   if (newValue === currentValue) {
+      self.commandRouter.pushToastMessage('info', 'On-Screen Keyboard', 'No changes detected.');
+      return;
+   }
+
+   // Build the extension path - empty string disables, path enables
+   const extensionPath = newValue ? "'\\/data\\/volumiokioskextensions\\/VirtualKeyboard\\/'" : "''";
+
+   // Modify /opt/volumiokiosk.sh using sed (needs sudo)
+   const sedCmd = `/bin/echo volumio | /usr/bin/sudo -S /bin/sed -i -e "s/--load-extension=[^ ]*/--load-extension=${extensionPath}/" /opt/volumiokiosk.sh`;
+
+   exec(sedCmd, { uid: 1000, gid: 1000 }, function (error, stdout, stderr) {
+      if (error) {
+         self.logger.error(logPrefix + " Error modifying /opt/volumiokiosk.sh: " + error);
+         self.commandRouter.pushToastMessage('error', 'On-Screen Keyboard', 'Failed to update kiosk configuration: ' + error);
+         return;
+      }
+
+      self.config.set('virtualKeyboard', newValue);
+      self.logger.info(logPrefix + " Virtual keyboard " + (newValue ? "enabled" : "disabled"));
+
+      // Restart kiosk service
+      exec('/usr/bin/sudo /bin/systemctl restart volumio-kiosk.service', function (err, stdout, stderr) {
+         if (err) {
+            self.logger.error(logPrefix + " Failed to restart kiosk: " + err);
+            self.commandRouter.pushToastMessage('error', 'On-Screen Keyboard', 'Settings saved but kiosk restart failed: ' + err);
+         } else {
+            self.logger.info(logPrefix + " Kiosk restarted successfully");
+            self.commandRouter.pushToastMessage('success', 'On-Screen Keyboard', 'Keyboard ' + (newValue ? 'enabled' : 'disabled') + '. Kiosk restarting...');
+         }
+         self.refreshUI();
+      });
+   });
 };
 
 
