@@ -1,17 +1,27 @@
 {
     "rotatescreen": {
-        "value": {
-            "value": "normal",
-            "po":"normal",
-            "fbconv":"0",
-            "label": "Normal 🖥️"
-        }
+        "value": "normal",
+        "label": "Default"
     },
-    "touchcorrection": {
-        "value": {
-            "value": "automatic",
-            "label": "Automatic 🤖"
-        }
+    "show_advanced": {
+        "type": "boolean",
+        "value": false
+    },
+    "touch_offset": {
+        "value": "0",
+        "label": "System default"
+    },
+    "pointer_offset": {
+        "value": "0",
+        "label": "System default"
+    },
+    "fbcon_offset": {
+        "value": "same",
+        "label": "Same as Screen"
+    },
+    "plymouth_offset": {
+        "value": "same",
+        "label": "Same as Screen"
     },
     "hidecursor": {
         "type": "boolean",
@@ -26,13 +36,15 @@
         "value": true
     },
     "screensavertype": {
-        "value": {
-            "value": "dpms",
-            "label": "Turn the screen off"
-        }
+        "value": "dpms",
+        "label": "Turn the screen off"
     },
     "brightness": {
         "type": "number",
         "value": 1
+    },
+    "virtualKeyboard": {
+        "type": "boolean",
+        "value": true
     }
 }
