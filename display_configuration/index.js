@@ -1138,8 +1138,10 @@ display_configuration.prototype.detectTouchscreen = function () {
 
          // Match all possible touchscreen or touchpad candidates
          // Note: Excludes "mouse" - mice should only get pointer correction, not touch correction
+         // Filter to "slave pointer" only - excludes keyboard instances that cannot accept transformation
          const matches = lines.filter(line =>
-            /touch|touchscreen|finger|multitouch|stylus|goodix|synp|elan|ft5406|maxtouch|wacom|ntrg|egalax|ilitek|touchpad/i.test(line)
+            /touch|touchscreen|finger|multitouch|stylus|goodix|synp|elan|ft5406|maxtouch|wacom|ntrg|egalax|ilitek|touchpad/i.test(line) &&
+            /slave\s+pointer/i.test(line)
          );
 
          if (matches.length === 0) {
