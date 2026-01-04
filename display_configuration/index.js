@@ -152,38 +152,51 @@ display_configuration.prototype.getUIConfig = function () {
       __dirname + '/UIConfig.json')
       .then(async function (uiconf) {
 
-         // Section 0: Device Rotation
+         // Label migration: old -> new
+         const migrateLabel = function(label) {
+            const labelMap = {
+               'None': 'System default',
+               'Same as Device': 'Same as Screen',
+               'Normal': 'Default'
+            };
+            return labelMap[label] || label;
+         };
+
+         // Section 0: Display Settings
          // [0] rotatescreen, [1] brightness
-         var rvalue = self.getConfigSelect('rotatescreen', { value: "normal", label: "Normal" });
+         var rvalue = self.getConfigSelect('rotatescreen', { value: "normal", label: "Default" });
          self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.value', rvalue.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.label', rvalue.label);
+         self.configManager.setUIConfigParam(uiconf, 'sections[0].content[0].value.label', migrateLabel(rvalue.label));
 
          var brightness = self.getConfigValue('brightness', 1);
          uiconf.sections[0].content[1].config.bars[0].value = brightness;
 
-         // Section 1: Hardware Calibration
-         // [0] touch_offset, [1] pointer_offset, [2] fbcon_offset, [3] plymouth_offset
-         var touchOffset = self.getConfigSelect('touch_offset', { value: "0", label: "None" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[0].value.value', touchOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[0].value.label', touchOffset.label);
+         // Section 1: Advanced Settings
+         // [0] show_advanced, [1] touch_offset, [2] pointer_offset, [3] fbcon_offset, [4] plymouth_offset
+         var showAdvanced = self.getConfigValue('show_advanced', false);
+         uiconf.sections[1].content[0].value = showAdvanced;
+
+         var touchOffset = self.getConfigSelect('touch_offset', { value: "0", label: "System default" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[1].value.value', touchOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[1].value.label', migrateLabel(touchOffset.label));
 
          // Hide touch_offset if no touch devices
          let touchDevices = await self.detectTouchscreen();
          if (!touchDevices || touchDevices.length === 0) {
-            uiconf.sections[1].content[0].hidden = true;
+            uiconf.sections[1].content[1].hidden = true;
          }
 
-         var pointerOffset = self.getConfigSelect('pointer_offset', { value: "0", label: "None" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[1].value.value', pointerOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[1].value.label', pointerOffset.label);
+         var pointerOffset = self.getConfigSelect('pointer_offset', { value: "0", label: "System default" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[2].value.value', pointerOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[2].value.label', migrateLabel(pointerOffset.label));
 
-         var fbconOffset = self.getConfigSelect('fbcon_offset', { value: "same", label: "Same as Device" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[2].value.value', fbconOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[2].value.label', fbconOffset.label);
+         var fbconOffset = self.getConfigSelect('fbcon_offset', { value: "same", label: "Same as Screen" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[3].value.value', fbconOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[3].value.label', migrateLabel(fbconOffset.label));
 
-         var plymouthOffset = self.getConfigSelect('plymouth_offset', { value: "same", label: "Same as Device" });
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[3].value.value', plymouthOffset.value);
-         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[3].value.label', plymouthOffset.label);
+         var plymouthOffset = self.getConfigSelect('plymouth_offset', { value: "same", label: "Same as Screen" });
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[4].value.value', plymouthOffset.value);
+         self.configManager.setUIConfigParam(uiconf, 'sections[1].content[4].value.label', migrateLabel(plymouthOffset.label));
 
          // Section 2: Screensaver
          // [0] hidecursor, [1] screensavertype, [2] xscreensettings, [3] timeout, [4] noifplay
@@ -935,9 +948,12 @@ display_configuration.prototype.saveCalibration = function (data) {
       return;
    }
 
+   // Save show_advanced toggle state
+   self.config.set('show_advanced', data['show_advanced'] || false);
+
    // Save touch_offset
    const touchOffsetValue = (data['touch_offset'] && data['touch_offset'].value) || '0';
-   const touchOffsetLabel = (data['touch_offset'] && data['touch_offset'].label) || 'None';
+   const touchOffsetLabel = (data['touch_offset'] && data['touch_offset'].label) || 'System default';
    self.config.set('touch_offset', {
       value: touchOffsetValue,
       label: touchOffsetLabel
@@ -945,7 +961,7 @@ display_configuration.prototype.saveCalibration = function (data) {
 
    // Save pointer_offset
    const pointerOffsetValue = (data['pointer_offset'] && data['pointer_offset'].value) || '0';
-   const pointerOffsetLabel = (data['pointer_offset'] && data['pointer_offset'].label) || 'None';
+   const pointerOffsetLabel = (data['pointer_offset'] && data['pointer_offset'].label) || 'System default';
    self.config.set('pointer_offset', {
       value: pointerOffsetValue,
       label: pointerOffsetLabel
@@ -953,7 +969,7 @@ display_configuration.prototype.saveCalibration = function (data) {
 
    // Save fbcon_offset
    const fbconOffsetValue = (data['fbcon_offset'] && data['fbcon_offset'].value) || 'same';
-   const fbconOffsetLabel = (data['fbcon_offset'] && data['fbcon_offset'].label) || 'Same as Device';
+   const fbconOffsetLabel = (data['fbcon_offset'] && data['fbcon_offset'].label) || 'Same as Screen';
    self.config.set('fbcon_offset', {
       value: fbconOffsetValue,
       label: fbconOffsetLabel
@@ -961,13 +977,13 @@ display_configuration.prototype.saveCalibration = function (data) {
 
    // Save plymouth_offset
    const plymouthOffsetValue = (data['plymouth_offset'] && data['plymouth_offset'].value) || 'same';
-   const plymouthOffsetLabel = (data['plymouth_offset'] && data['plymouth_offset'].label) || 'Same as Device';
+   const plymouthOffsetLabel = (data['plymouth_offset'] && data['plymouth_offset'].label) || 'Same as Screen';
    self.config.set('plymouth_offset', {
       value: plymouthOffsetValue,
       label: plymouthOffsetLabel
    });
 
-   self.commandRouter.pushToastMessage("success", "Hardware Calibration", "Settings applied! TTY and Plymouth changes take effect on reboot.");
+   self.commandRouter.pushToastMessage("success", "Advanced Settings", "Settings applied! Console and Boot Logo changes take effect on reboot.");
 
    setTimeout(function () {
       self.refreshUI();

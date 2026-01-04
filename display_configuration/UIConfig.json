@@ -4,9 +4,9 @@
   },
   "sections": [
     {
-      "id": "device_rotation",
+      "id": "display_settings",
       "element": "section",
-      "label": "TRANSLATE.DEVICE_ROTATION_SECTION",
+      "label": "TRANSLATE.DISPLAY_SETTINGS_SECTION",
       "onSave": {
         "type": "controller",
         "endpoint": "user_interface/display_configuration",
@@ -23,16 +23,16 @@
         {
           "id": "rotatescreen",
           "element": "select",
-          "doc": "TRANSLATE.DEVICE_ROT_DOC",
-          "label": "TRANSLATE.DEVICE_ROT",
+          "doc": "TRANSLATE.SCREEN_ROT_DOC",
+          "label": "TRANSLATE.SCREEN_ROT",
           "value": {
             "value": "normal",
-            "label": "Normal"
+            "label": "Default"
           },
           "options": [
             {
               "value": "normal",
-              "label": "TRANSLATE.NORMAL"
+              "label": "TRANSLATE.DEFAULT"
             },
             {
               "value": "left",
@@ -52,7 +52,7 @@
           "id": "brightness",
           "element": "equalizer",
           "label": "TRANSLATE.BRIGHTNESS",
-          "doc": "TRANSLATE.BRIGHTNESS",
+          "doc": "TRANSLATE.BRIGHTNESS_DOC",
           "config": {
             "orientation": "horizontal",
             "bars": [
@@ -68,10 +68,9 @@
       ]
     },
     {
-      "id": "hardware_calibration",
+      "id": "advanced_settings",
       "element": "section",
-      "label": "TRANSLATE.CALIBRATION_SECTION",
-      "description": "TRANSLATE.CALIBRATION_SECTION_DOC",
+      "label": "TRANSLATE.ADVANCED_SETTINGS_SECTION",
       "onSave": {
         "type": "controller",
         "endpoint": "user_interface/display_configuration",
@@ -80,6 +79,7 @@
       "saveButton": {
         "label": "TRANSLATE.APPLY",
         "data": [
+          "show_advanced",
           "touch_offset",
           "pointer_offset",
           "fbcon_offset",
@@ -88,18 +88,25 @@
       },
       "content": [
         {
+          "id": "show_advanced",
+          "element": "switch",
+          "label": "TRANSLATE.SHOW_ADVANCED",
+          "doc": "TRANSLATE.SHOW_ADVANCED_DOC",
+          "value": false
+        },
+        {
           "id": "touch_offset",
           "element": "select",
-          "doc": "TRANSLATE.TOUCH_OFFSET_DOC",
-          "label": "TRANSLATE.TOUCH_OFFSET",
+          "doc": "TRANSLATE.TOUCH_ROTATION_DOC",
+          "label": "TRANSLATE.TOUCH_ROTATION",
           "value": {
             "value": "0",
-            "label": "None"
+            "label": "System default"
           },
           "options": [
             {
               "value": "0",
-              "label": "TRANSLATE.ROT_NONE"
+              "label": "TRANSLATE.SYSTEM_DEFAULT"
             },
             {
               "value": "90",
@@ -113,21 +120,25 @@
               "value": "270",
               "label": "TRANSLATE.ROT_90CCW"
             }
-          ]
+          ],
+          "visibleIf": {
+            "field": "show_advanced",
+            "value": true
+          }
         },
         {
           "id": "pointer_offset",
           "element": "select",
-          "doc": "TRANSLATE.POINTER_OFFSET_DOC",
-          "label": "TRANSLATE.POINTER_OFFSET",
+          "doc": "TRANSLATE.MOUSE_ROTATION_DOC",
+          "label": "TRANSLATE.MOUSE_ROTATION",
           "value": {
             "value": "0",
-            "label": "None"
+            "label": "System default"
           },
           "options": [
             {
               "value": "0",
-              "label": "TRANSLATE.ROT_NONE"
+              "label": "TRANSLATE.SYSTEM_DEFAULT"
             },
             {
               "value": "90",
@@ -141,25 +152,29 @@
               "value": "270",
               "label": "TRANSLATE.ROT_90CCW"
             }
-          ]
+          ],
+          "visibleIf": {
+            "field": "show_advanced",
+            "value": true
+          }
         },
         {
           "id": "fbcon_offset",
           "element": "select",
-          "doc": "TRANSLATE.FBCON_OFFSET_DOC",
-          "label": "TRANSLATE.FBCON_OFFSET",
+          "doc": "TRANSLATE.CONSOLE_TEXT_DOC",
+          "label": "TRANSLATE.CONSOLE_TEXT",
           "value": {
             "value": "same",
-            "label": "Same as Device"
+            "label": "Same as Screen"
           },
           "options": [
             {
               "value": "same",
-              "label": "TRANSLATE.SAME_AS_DEVICE"
+              "label": "TRANSLATE.SAME_AS_SCREEN"
             },
             {
               "value": "0",
-              "label": "TRANSLATE.ROT_NONE"
+              "label": "TRANSLATE.SYSTEM_DEFAULT"
             },
             {
               "value": "90",
@@ -173,25 +188,29 @@
               "value": "270",
               "label": "TRANSLATE.ROT_90CCW"
             }
-          ]
+          ],
+          "visibleIf": {
+            "field": "show_advanced",
+            "value": true
+          }
         },
         {
           "id": "plymouth_offset",
           "element": "select",
-          "doc": "TRANSLATE.PLYMOUTH_OFFSET_DOC",
-          "label": "TRANSLATE.PLYMOUTH_OFFSET",
+          "doc": "TRANSLATE.BOOT_LOGO_DOC",
+          "label": "TRANSLATE.BOOT_LOGO",
           "value": {
             "value": "same",
-            "label": "Same as Device"
+            "label": "Same as Screen"
           },
           "options": [
             {
               "value": "same",
-              "label": "TRANSLATE.SAME_AS_DEVICE"
+              "label": "TRANSLATE.SAME_AS_SCREEN"
             },
             {
               "value": "0",
-              "label": "TRANSLATE.ROT_NONE"
+              "label": "TRANSLATE.SYSTEM_DEFAULT"
             },
             {
               "value": "90",
@@ -205,7 +224,11 @@
               "value": "270",
               "label": "TRANSLATE.ROT_90CCW"
             }
-          ]
+          ],
+          "visibleIf": {
+            "field": "show_advanced",
+            "value": true
+          }
         }
       ]
     },

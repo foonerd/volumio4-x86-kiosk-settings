@@ -1,23 +1,27 @@
 {
     "rotatescreen": {
         "value": "normal",
-        "label": "Normal"
+        "label": "Default"
+    },
+    "show_advanced": {
+        "type": "boolean",
+        "value": false
     },
     "touch_offset": {
         "value": "0",
-        "label": "None"
+        "label": "System default"
     },
     "pointer_offset": {
         "value": "0",
-        "label": "None"
+        "label": "System default"
     },
     "fbcon_offset": {
         "value": "same",
-        "label": "Same as Device"
+        "label": "Same as Screen"
     },
     "plymouth_offset": {
         "value": "same",
-        "label": "Same as Device"
+        "label": "Same as Screen"
     },
     "hidecursor": {
         "type": "boolean",
