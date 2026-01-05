@@ -44,6 +44,10 @@
     "XSCREEN_SAVER_SETTING": "Configuracion de Xscreensaver",
 
     "DEBUG_SECTION": "Diagnosticos",
+    "DEBUG_LOGGING": "Registro de depuracion",
+    "DEBUG_LOGGING_DOC": "Habilita el registro detallado para solucion de problemas. Deshabilitar para uso en produccion.",
+    "DEBUG_LOGGING_ENABLED": "Registro de depuracion habilitado",
+    "DEBUG_LOGGING_DISABLED": "Registro de depuracion deshabilitado",
     "RESTART_DISPLAY": "Reiniciar sesion de pantalla",
     "RESTART_DISPLAY_DOC": "Reinicia el servicio de pantalla sin reiniciar. Uselo para aplicar configuraciones o solucionar problemas de pantalla.",
     "RESTARTING_DISPLAY": "Reiniciando sesion de pantalla...",

@@ -44,6 +44,10 @@
     "XSCREEN_SAVER_SETTING": "Xscreensaver-Einstellungen",
 
     "DEBUG_SECTION": "Diagnose",
+    "DEBUG_LOGGING": "Debug-Protokollierung",
+    "DEBUG_LOGGING_DOC": "Aktiviert detaillierte Protokollierung zur Fehlerbehebung. Fuer Produktionsumgebung deaktivieren.",
+    "DEBUG_LOGGING_ENABLED": "Debug-Protokollierung aktiviert",
+    "DEBUG_LOGGING_DISABLED": "Debug-Protokollierung deaktiviert",
     "RESTART_DISPLAY": "Anzeigesitzung neu starten",
     "RESTART_DISPLAY_DOC": "Startet den Anzeigedienst ohne Neustart neu. Verwenden Sie dies, um Einstellungen anzuwenden oder Anzeigeprobleme zu beheben.",
     "RESTARTING_DISPLAY": "Anzeigesitzung wird neu gestartet...",

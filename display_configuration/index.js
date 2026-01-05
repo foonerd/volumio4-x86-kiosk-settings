@@ -102,11 +102,14 @@ display_configuration.prototype.loadI18nStrings = function () {
    var langFile = __dirname + '/i18n/strings_' + lang_code + '.json';
    var defaultFile = __dirname + '/i18n/strings_en.json';
 
+   self.debugLog( 'loadI18nStrings: loading from ' + defaultFile);
+
    // Always load English as fallback
    try {
       self.i18nStringsDefault = fs.readJsonSync(defaultFile);
+      self.debugLog( 'loadI18nStrings: loaded ' + Object.keys(self.i18nStringsDefault).length + ' keys');
    } catch (e) {
-      self.logger.error(logPrefix + 'Failed to load English fallback strings');
+      self.logger.error(logPrefix + 'Failed to load English fallback strings: ' + e.message);
       self.i18nStringsDefault = {};
    }
 
@@ -116,7 +119,7 @@ display_configuration.prototype.loadI18nStrings = function () {
    } else {
       try {
          self.i18nStrings = fs.readJsonSync(langFile);
-         self.logger.info(logPrefix + 'Loaded i18n strings for language: ' + lang_code);
+         self.debugLog( 'Loaded i18n strings for language: ' + lang_code);
       } catch (e) {
          self.logger.warn(logPrefix + 'Failed to load ' + lang_code + ' translations, using English');
          self.i18nStrings = self.i18nStringsDefault;
@@ -139,7 +142,32 @@ display_configuration.prototype.getI18nString = function (key) {
    }
 
    // Last resort: return key itself
+   self.logger.warn(logPrefix + 'getI18nString: key not found: ' + key + ', i18nStrings=' + (self.i18nStrings ? 'set' : 'null'));
    return key;
+};
+
+// Debug logging helper - only logs if debug_logging is enabled
+display_configuration.prototype.debugLog = function (message) {
+   var self = this;
+   if (self.config.get('debug_logging')) {
+      self.debugLog( message);
+   }
+};
+
+// Toggle debug logging - immediate save on switch change
+display_configuration.prototype.toggleDebugLogging = function (data) {
+   var self = this;
+   var defer = libQ.defer();
+
+   var enabled = data && data.debug_logging !== undefined ? data.debug_logging : !self.config.get('debug_logging');
+   self.config.set('debug_logging', enabled);
+
+   self.commandRouter.pushToastMessage('success',
+      self.getI18nString('PLUGIN_TITLE'),
+      self.getI18nString(enabled ? 'DEBUG_LOGGING_ENABLED' : 'DEBUG_LOGGING_DISABLED'));
+
+   defer.resolve();
+   return defer.promise;
 };
 
 display_configuration.prototype.onStart = function () {
@@ -157,7 +185,7 @@ display_configuration.prototype.onStart = function () {
    }).then((xAccessible) => {
       if (!xAccessible) {
          // X not accessible despite waiting - restart kiosk to get fresh X session
-         self.logger.info(logPrefix + ' X server not accessible, restarting kiosk service...');
+         self.debugLog( ' X server not accessible, restarting kiosk service...');
          return self.restartKioskAndWait();
       }
       return true;
@@ -203,7 +231,7 @@ display_configuration.prototype.restartKioskAndWait = function () {
             return;
          }
 
-         self.logger.info(logPrefix + ' Kiosk service restarted, waiting for X server...');
+         self.debugLog( ' Kiosk service restarted, waiting for X server...');
 
          // Wait a moment for kiosk to start
          setTimeout(() => {
@@ -218,7 +246,7 @@ display_configuration.prototype.restartKioskAndWait = function () {
                attempts++;
                self.testXAccess().then((accessible) => {
                   if (accessible) {
-                     self.logger.info(logPrefix + ' X server accessible after kiosk restart');
+                     self.debugLog( ' X server accessible after kiosk restart');
                      resolve(true);
                   } else if (attempts >= maxAttempts) {
                      self.logger.warn(logPrefix + ' X server still not accessible after kiosk restart');
@@ -332,7 +360,9 @@ display_configuration.prototype.getUIConfig = function () {
 
          uiconf.sections[2].content[4].value = self.getConfigValue('noifplay', true);
 
-         // Section 3: Diagnostics - just button, no values
+         // Section 3: Diagnostics
+         // [0] debug_logging, [1] restart_kiosk button, [2] generate_diagnostics button
+         uiconf.sections[3].content[0].value = self.getConfigValue('debug_logging', true);
 
          defer.resolve(uiconf);
       })
@@ -439,7 +469,7 @@ display_configuration.prototype.detectConnectedScreen = function () {
             return resolve(null);
          }
 
-         self.logger.info(logPrefix + " Connected screens: " + connected.join(", "));
+         self.debugLog( " Connected screens: " + connected.join(", "));
          resolve(connected[0]);
       });
    });
@@ -489,8 +519,7 @@ display_configuration.prototype.writeRotationConfig = function (screen, plymouth
             self.logger.error(logPrefix + ` tee exited with code ${code} stderr: ${stderr.trim()}`);
             return reject(new Error(stderr.trim() || `tee exit ${code}`));
          }
-         self.logger.info(
-            logPrefix +
+         self.debugLog(
             ` Rotation config saved for Grub: screen=${screen}, plymouth=${plymouthDegrees}, fbcon=${fbRotate}`
          );
          resolve();
@@ -516,7 +545,7 @@ display_configuration.prototype.removeRotationConfig = function () {
             return reject(err);
          }
 
-         self.logger.info(logPrefix + ` Rotation config removed: ${boot_screen_rotation}`);
+         self.debugLog( ` Rotation config removed: ${boot_screen_rotation}`);
          self.commandRouter.pushToastMessage(
             "error",
             "Plugin stopped!!!",
@@ -541,7 +570,7 @@ display_configuration.prototype.fixXauthority = function () {
             self.logger.error(logPrefix + " fixXauthority failed: " + (stderr || error.message));
             return reject(error);
          }
-         self.logger.info(logPrefix + " fixXauthority: /home/volumio/.Xauthority updated");
+         self.debugLog( " fixXauthority: /home/volumio/.Xauthority updated");
          resolve(stdout);
       });
    });
@@ -563,7 +592,7 @@ display_configuration.prototype.waitForXServer = function () {
          // Test X server with xset command
          exec(`DISPLAY=${display} xset q`, { timeout: 3000 }, (err) => {
             if (!err) {
-               self.logger.info(logPrefix + ` X server ready after ${attempt} attempt(s)`);
+               self.debugLog( ` X server ready after ${attempt} attempt(s)`);
                resolve();
                return;
             }
@@ -574,7 +603,7 @@ display_configuration.prototype.waitForXServer = function () {
                return;
             }
 
-            self.logger.info(logPrefix + ` Waiting for X server (attempt ${attempt}/${maxRetries})...`);
+            self.debugLog( ` Waiting for X server (attempt ${attempt}/${maxRetries})...`);
             setTimeout(tryConnect, retryDelay);
          });
       };
@@ -598,14 +627,14 @@ display_configuration.prototype.waitForKioskAndReapply = function () {
       exec("pgrep -f 'chromium|openbox'", (err, stdout) => {
          if (!err && stdout.trim() && !kioskDetected) {
             kioskDetected = true;
-            self.logger.info(logPrefix + ` Kiosk browser detected after ${checkCount}s, re-applying input settings in 3s`);
+            self.debugLog( ` Kiosk browser detected after ${checkCount}s, re-applying input settings in 3s`);
 
             // Wait for browser to fully initialize before re-applying
             setTimeout(async () => {
                try {
                   await self.applyTouchCorrection();
                   await self.applyPointerCorrection();
-                  self.logger.info(logPrefix + ' Input settings re-applied after kiosk start');
+                  self.debugLog( ' Input settings re-applied after kiosk start');
                } catch (e) {
                   self.logger.error(logPrefix + ' Failed to re-apply input settings: ' + e.message);
                }
@@ -614,7 +643,7 @@ display_configuration.prototype.waitForKioskAndReapply = function () {
          }
 
          if (checkCount >= maxChecks) {
-            self.logger.info(logPrefix + ' Kiosk monitor timeout - browser may already be running or not in use');
+            self.debugLog( ' Kiosk monitor timeout - browser may already be running or not in use');
             return;
          }
 
@@ -647,9 +676,9 @@ display_configuration.prototype.checkDrmOrientation = async function (screen) {
 
       self.drmForcesOrientation = !!drmLine; // store true/false
       if (self.drmForcesOrientation) {
-         self.logger.info(logPrefix + ` Kernel forces orientation for ${screen} (line: "${drmLine.trim()}")`);
+         self.debugLog( ` Kernel forces orientation for ${screen} (line: "${drmLine.trim()}")`);
       } else {
-         self.logger.info(logPrefix + ` No forced DRM orientation detected for ${screen}`);
+         self.debugLog( ` No forced DRM orientation detected for ${screen}`);
       }
 
    } catch (err) {
@@ -667,10 +696,10 @@ display_configuration.prototype.ensureXscreensaver = function () {
 
    exec("pgrep xscreensaver", (err, stdout) => {
       if (stdout && stdout.trim().length > 0) {
-         self.logger.info(logPrefix + " xscreensaver already running (pid " + stdout.trim() + ")");
+         self.debugLog( " xscreensaver already running (pid " + stdout.trim() + ")");
       } else {
          exec(`DISPLAY=${display} xscreensaver -nosplash &`);
-         self.logger.info(logPrefix + " xscreensaver started (using ~/.xscreensaver settings)");
+         self.debugLog( " xscreensaver started (using ~/.xscreensaver settings)");
       }
    });
 };
@@ -695,7 +724,7 @@ display_configuration.prototype.monitorLid = function () {
       return;
    }
 
-   self.logger.info(logPrefix + ` Monitoring lid(s): ${lidPaths.join(', ')}`);
+   self.debugLog( ` Monitoring lid(s): ${lidPaths.join(', ')}`);
    let lidClosed = false;
 
    setInterval(() => {
@@ -708,13 +737,13 @@ display_configuration.prototype.monitorLid = function () {
 
          if (anyClosed && !lidClosed) {
             lidClosed = true;
-            self.logger.info(logPrefix + " Lid closed - turning screen off via DPMS");
+            self.debugLog( " Lid closed - turning screen off via DPMS");
             exec(`/usr/bin/xset -display ${display} dpms force off`, (err) => {
                if (err) self.logger.warn(logPrefix + " DPMS force off failed: " + err.message);
             });
          } else if (!anyClosed && lidClosed) {
             lidClosed = false;
-            self.logger.info(logPrefix + " Lid opened - turning screen on via DPMS");
+            self.debugLog( " Lid opened - turning screen on via DPMS");
             exec(`/usr/bin/xset -display ${display} dpms force on`, (err) => {
                if (err) self.logger.warn(logPrefix + " DPMS force on failed: " + err.message);
             });
@@ -733,12 +762,12 @@ display_configuration.prototype.checkIfPlay = function () {
 
    // Disable DPMS at start
    exec(`/usr/bin/xset -display ${display} -dpms`, () => {
-      self.logger.info(logPrefix + " DPMS disabled before playback state check");
+      self.debugLog( " DPMS disabled before playback state check");
    });
 
    // Kill any leftover xscreensaver instances (clean start)
    exec("pkill -9 xscreensaver || true", () => {
-      self.logger.info(logPrefix + " xscreensaver cleaned up before starting");
+      self.debugLog( " xscreensaver cleaned up before starting");
    });
 
    // Start xscreensaver immediately if selected
@@ -753,14 +782,14 @@ display_configuration.prototype.checkIfPlay = function () {
       const noifplay = self.getConfigValue("noifplay", true);
       const screensavertype = self.getConfigValue("screensavertype", "dpms");
 
-      self.logger.info(
-         `${logPrefix} Volumio status=${data.status} timeout=${timeout} noifplay=${noifplay} screensavertype=${screensavertype}`
+      self.debugLog(
+         `Volumio status=${data.status} timeout=${timeout} noifplay=${noifplay} screensavertype=${screensavertype}`
       );
 
       // ---- Wake conditions ----
       if ((data.status === "play" && noifplay) || timeout === 0 && screensavertype === "dpms") {
          self.wakeupScreen();
-         self.logger.info(`${logPrefix} → Wakeup triggered`);
+         self.debugLog(` → Wakeup triggered`);
          return;
       }
 
@@ -769,7 +798,7 @@ display_configuration.prototype.checkIfPlay = function () {
          setTimeout(() => {
             if (self.lastState !== "play") {
                self.sleepScreen();
-               self.logger.info(`${logPrefix} → Sleep (DPMS) triggered after ${timeout}s`);
+               self.debugLog(` → Sleep (DPMS) triggered after ${timeout}s`);
             }
          }, timeout * 1000);
          return;
@@ -778,11 +807,11 @@ display_configuration.prototype.checkIfPlay = function () {
       // ---- Sleep (xscreensaver) ----
       if (data.status !== "play" && screensavertype === "xscreensaver") {
          self.sleepScreen();
-         self.logger.info(`${logPrefix} → Sleep (xscreensaver) triggered`);
+         self.debugLog(` → Sleep (xscreensaver) triggered`);
          return;
       }
 
-      self.logger.info(`${logPrefix} → No action taken`);
+      self.debugLog(` → No action taken`);
    });
 };
 display_configuration.prototype.sleepScreen = function () {
@@ -798,7 +827,7 @@ display_configuration.prototype.sleepScreen = function () {
             if (err) {
                self.logger.error(logPrefix + " sleepScreen: DPMS command failed: " + err.message);
             } else {
-               self.logger.info(logPrefix + " sleepScreen: DPMS - screen off in " + timeout + "s");
+               self.debugLog( " sleepScreen: DPMS - screen off in " + timeout + "s");
             }
          });
 
@@ -822,7 +851,7 @@ display_configuration.prototype.sleepScreen = function () {
                self.logger.warn(logPrefix + " sleepScreen: xscreensaver not running or failed → " + error.message);
                return;
             }
-            self.logger.info(logPrefix + " sleepScreen: xscreensaver activated (screen blanked)");
+            self.debugLog( " sleepScreen: xscreensaver activated (screen blanked)");
          });
 
       } else {
@@ -846,7 +875,7 @@ display_configuration.prototype.wakeupScreen = function () {
             if (err) {
                self.logger.error(logPrefix + " wakeupScreen: DPMS command failed: " + err.message);
             } else {
-               self.logger.info(logPrefix + " wakeupScreen: DPMS - screen on");
+               self.debugLog( " wakeupScreen: DPMS - screen on");
             }
          });
 
@@ -856,7 +885,7 @@ display_configuration.prototype.wakeupScreen = function () {
             if (error) {
                self.logger.error(logPrefix + " wakeupScreen: Failed to deactivate xscreensaver → " + error);
             } else {
-               self.logger.info(logPrefix + " wakeupScreen: xscreensaver deactivated (screen on)");
+               self.debugLog( " wakeupScreen: xscreensaver deactivated (screen on)");
             }
          });
 
@@ -900,7 +929,7 @@ display_configuration.prototype.xscreensettings = function (data) {
       if (killErr) {
          self.logger.warn(logPrefix + " xscreensettings: no previous xscreensaver processes to kill");
       } else {
-         self.logger.info(logPrefix + " xscreensettings: previous xscreensaver processes killed");
+         self.debugLog( " xscreensettings: previous xscreensaver processes killed");
       }
 
       // 2. Start daemon cleanly
@@ -908,7 +937,7 @@ display_configuration.prototype.xscreensettings = function (data) {
          if (error) {
             self.logger.error(logPrefix + ": Failed to start xscreensaver daemon: " + error);
          } else {
-            self.logger.info(logPrefix + ": xscreensaver daemon started");
+            self.debugLog( ": xscreensaver daemon started");
          }
 
          // 3. Deactivate so the screen is "on" when settings open
@@ -916,7 +945,7 @@ display_configuration.prototype.xscreensettings = function (data) {
             if (error) {
                self.logger.warn(logPrefix + " xscreensettings: Failed to deactivate xscreensaver → " + error);
             } else {
-               self.logger.info(logPrefix + " xscreensettings: xscreensaver deactivated (screen on)");
+               self.debugLog( " xscreensettings: xscreensaver deactivated (screen on)");
             }
          });
 
@@ -927,7 +956,7 @@ display_configuration.prototype.xscreensettings = function (data) {
                self.logger.error(logPrefix + ": Failed to start xscreensaver-settings: " + error);
                defer.reject(error);
             } else {
-               self.logger.info(logPrefix + `: xscreensaver-settings started on display ${display}`);
+               self.debugLog( `: xscreensaver-settings started on display ${display}`);
                defer.resolve();
             }
          });
@@ -957,7 +986,7 @@ display_configuration.prototype.setBrightnessSoft = function () {
             if (err) {
                self.logger.error(logPrefix + " Failed to set brightness: " + err);
             } else {
-               self.logger.info(logPrefix + ` Brightness set to ${brightness * 100}% for screen ${screen}`);
+               self.debugLog( ` Brightness set to ${brightness * 100}% for screen ${screen}`);
             }
          });
       });
@@ -1007,7 +1036,7 @@ display_configuration.prototype.setBrightness = function () {
                   return reject(error);
                }
 
-               self.logger.info(logPrefix + ` Brightness set to ${pct}% (${newValue}/${maxBrightness}) on ${device}`);
+               self.debugLog( ` Brightness set to ${pct}% (${newValue}/${maxBrightness}) on ${device}`);
                resolve(true);
             });
          });
@@ -1221,7 +1250,7 @@ display_configuration.prototype.applyscreensettingsboot = async function () {
       
       // Always apply xrandr rotation (new config uses plymouth= not panel_orientation)
       await this.applyRotation();
-      self.logger.info(logPrefix + ` Panel Rotation applied via xrandr`);
+      self.debugLog( ` Panel Rotation applied via xrandr`);
 
       await this.applyTouchCorrection();
       await this.applyPointerCorrection();
@@ -1281,7 +1310,7 @@ display_configuration.prototype.detectTouchscreen = function () {
             return { id, name };
          }).filter(dev => dev.id);
 
-         self.logger.info(logPrefix + " Touch-related devices detected: " + JSON.stringify(devices));
+         self.debugLog( " Touch-related devices detected: " + JSON.stringify(devices));
          resolve(devices); // return ALL devices
       });
    });
@@ -1351,8 +1380,8 @@ display_configuration.prototype.applyRotation = async function () {
    let plymouthOffsetDegrees = (plymouthOffset === "same") ? 0 : parseInt(plymouthOffset, 10);
    let plymouthDegrees = (displayDegrees + plymouthOffsetDegrees) % 360;
 
-   self.logger.info(logPrefix + ` TTY: display=${rotatescreen}(${displayDegrees}) + offset=${fbconOffset}(${fbconOffsetDegrees}) = ${fbconDegrees} deg (fbconv=${fbconv})`);
-   self.logger.info(logPrefix + ` Plymouth: display=${rotatescreen}(${displayDegrees}) + offset=${plymouthOffset}(${plymouthOffsetDegrees}) = ${plymouthDegrees} deg`);
+   self.debugLog( ` TTY: display=${rotatescreen}(${displayDegrees}) + offset=${fbconOffset}(${fbconOffsetDegrees}) = ${fbconDegrees} deg (fbconv=${fbconv})`);
+   self.debugLog( ` Plymouth: display=${rotatescreen}(${displayDegrees}) + offset=${plymouthOffset}(${plymouthOffsetDegrees}) = ${plymouthDegrees} deg`);
 
    const screen = await self.detectConnectedScreen();
 
@@ -1375,7 +1404,7 @@ display_configuration.prototype.applyRotation = async function () {
       if (err) {
          self.logger.error(logPrefix + ` xrandr rotation failed: ${stderr || err.message}`);
       } else {
-         self.logger.info(logPrefix + ` Runtime rotation applied: ${rotatescreen} | Boot config (plymouth=${plymouthDegrees}, fbconv=${fbconv})`);
+         self.debugLog( ` Runtime rotation applied: ${rotatescreen} | Boot config (plymouth=${plymouthDegrees}, fbconv=${fbconv})`);
       }
    });
 
@@ -1393,9 +1422,9 @@ display_configuration.prototype.applyFbconRotation = function (fbconValue) {
    exec(`test -f ${rotateAllPath} && echo ${fbconValue} | sudo tee ${rotateAllPath}`, (err, stdout, stderr) => {
       if (err) {
          // This is expected on some hardware - not all systems support runtime fbcon rotation
-         self.logger.info(logPrefix + ` fbcon rotation not available or failed (this is normal on some hardware)`);
+         self.debugLog( ` fbcon rotation not available or failed (this is normal on some hardware)`);
       } else {
-         self.logger.info(logPrefix + ` fbcon console rotation set to ${fbconValue}`);
+         self.debugLog( ` fbcon console rotation set to ${fbconValue}`);
       }
    });
 };
@@ -1529,7 +1558,7 @@ display_configuration.prototype.detectTouchInversion = async function (devId, sc
 
   try {
     // ask user to tap top-left
-    self.logger.info(`${logPrefix} Please touch TOP LEFT corner on ${deviceName || 'touch device'} (${screen})`);
+    self.debugLog(` Please touch TOP LEFT corner on ${deviceName || 'touch device'} (${screen})`);
     const samples1 = await self.getTouchSamples(devId, 1, 20000); // wait up to 120s for first touch
     if (!samples1 || samples1.length === 0) {
       throw new Error('No top-left touch sample captured');
@@ -1537,7 +1566,7 @@ display_configuration.prototype.detectTouchInversion = async function (devId, sc
     const topLeft = samples1[0];
 
     // ask user to tap bottom-right
-    self.logger.info(`${logPrefix} Please touch BOTTOM RIGHT corner on ${deviceName || 'touch device'} (${screen})`);
+    self.debugLog(` Please touch BOTTOM RIGHT corner on ${deviceName || 'touch device'} (${screen})`);
     const samples2 = await self.getTouchSamples(devId, 1, 20000); // wait up to 120s for second touch
     if (!samples2 || samples2.length === 0) {
       throw new Error('No bottom-right touch sample captured');
@@ -1563,7 +1592,7 @@ display_configuration.prototype.detectTouchInversion = async function (devId, sc
       if (!invertY && bottomRight.y < geom.height * 0.2) invertY = true; // bottom-right reported near top -> inverted
     }
 
-    self.logger.info(logPrefix + ` Inversion detected for ${deviceName || devId}: invertX=${invertX}, invertY=${invertY}`);
+    self.debugLog( ` Inversion detected for ${deviceName || devId}: invertX=${invertX}, invertY=${invertY}`);
     return { invertX, invertY };
   } catch (err) {
     self.logger.error(logPrefix + ` Touch inversion detection failed: ${err.message}`);
@@ -1579,12 +1608,12 @@ display_configuration.prototype.applyPointerCorrection = async function () {
   // Get pointer_offset - default is "0" (none/identity)
   let pointerOffset = self.getConfigValue("pointer_offset", "0");
   
-  self.logger.info(`${logPrefix} applyPointerCorrection: pointer_offset=${pointerOffset}`);
+  self.debugLog(` applyPointerCorrection: pointer_offset=${pointerOffset}`);
 
   // xrandr handles mouse transformation automatically for relative devices
   // Only apply explicit offset if set
   if (pointerOffset === "0" || pointerOffset === "none") {
-    self.logger.info(`${logPrefix} Pointer correction: none (xrandr handles relative devices)`);
+    self.debugLog(` Pointer correction: none (xrandr handles relative devices)`);
     return;
   }
 
@@ -1617,7 +1646,7 @@ display_configuration.prototype.applyPointerCorrection = async function () {
   try {
     const pointerDevices = await execCmd(`DISPLAY=${display} xinput list --name-only | grep -i mouse || true`);
     if (!pointerDevices) {
-      self.logger.info(`${logPrefix} No pointer (mouse) devices detected.`);
+      self.debugLog(` No pointer (mouse) devices detected.`);
       return;
     }
 
@@ -1628,7 +1657,7 @@ display_configuration.prototype.applyPointerCorrection = async function () {
         const id = idMatch.replace("id=", "").trim();
 
         await execCmd(`DISPLAY=${display} xinput set-prop ${id} "Coordinate Transformation Matrix" ${matrix}`);
-        self.logger.info(`${logPrefix} Pointer correction applied to ${name} (id=${id}) - ${logMsg}`);
+        self.debugLog(` Pointer correction applied to ${name} (id=${id}) - ${logMsg}`);
       } catch (err) {
         self.logger.warn(`${logPrefix} Failed to correct pointer ${name}: ${err.message}`);
       }
@@ -1707,7 +1736,7 @@ display_configuration.prototype.applyTouchCorrection = async function () {
    try {
       const touchDevices = await self.detectTouchscreen();
       if (!touchDevices || touchDevices.length === 0) {
-         self.logger.info(logPrefix + " No touchscreen detected, skipping correction.");
+         self.debugLog( " No touchscreen detected, skipping correction.");
          return;
       }
 
@@ -1717,14 +1746,14 @@ display_configuration.prototype.applyTouchCorrection = async function () {
       const finalMatrix = multiplyMatrix(rotMatrix, offsetMatrix);
       const matrixStr = matrixToString(finalMatrix);
 
-      self.logger.info(`${logPrefix} Touch matrix: display=${rotatescreen}, offset=${touchOffset}, matrix=${matrixStr}`);
+      self.debugLog(` Touch matrix: display=${rotatescreen}, offset=${touchOffset}, matrix=${matrixStr}`);
 
       for (let dev of touchDevices) {
          try {
             // Check if device supports Coordinate Transformation Matrix
             const propsOutput = await runCommand(`DISPLAY=${display} xinput list-props ${dev.id}`);
             if (!propsOutput.includes("Coordinate Transformation Matrix")) {
-               self.logger.info(`${logPrefix} Skipping ${dev.name} (id=${dev.id}) - no transformation matrix support (likely stylus/pen)`);
+               self.debugLog(` Skipping ${dev.name} (id=${dev.id}) - no transformation matrix support (likely stylus/pen)`);
                continue;
             }
 
@@ -1733,7 +1762,7 @@ display_configuration.prototype.applyTouchCorrection = async function () {
 
             // Apply transformation matrix
             await runCommand(`DISPLAY=${display} xinput set-prop ${dev.id} "Coordinate Transformation Matrix" ${matrixStr}`);
-            self.logger.info(`${logPrefix} Touch correction applied to ${dev.name} (id=${dev.id})`);
+            self.debugLog(` Touch correction applied to ${dev.name} (id=${dev.id})`);
 
          } catch (err) {
             self.logger.error(`${logPrefix} Failed to apply touch correction to ${dev.name} (id=${dev.id}): ${err.message}`);
@@ -1754,7 +1783,7 @@ display_configuration.prototype.applyCursorSetting = function () {
    try {
       // Stop any existing unclutter processes first
       exec("/bin/echo volumio | /usr/bin/sudo -S pkill -9 -f unclutter", { uid: 1000, gid: 1000 }, (err) => {
-         if (err) self.logger.info(logPrefix + " No unclutter process to stop");
+         if (err) self.debugLog( " No unclutter process to stop");
 
          if (hidecursor) {
             // Start unclutter as volumio user
@@ -1762,11 +1791,11 @@ display_configuration.prototype.applyCursorSetting = function () {
                if (err2) {
                   self.logger.error(logPrefix + " Error starting unclutter: " + err2);
                } else {
-                  self.logger.info(logPrefix + " unclutter started as volumio user");
+                  self.debugLog( " unclutter started as volumio user");
                }
             });
          } else {
-            self.logger.info(logPrefix + " unclutter stopped");
+            self.debugLog( " unclutter stopped");
          }
       });
 
@@ -1794,7 +1823,7 @@ display_configuration.prototype.restartKiosk = function() {
          return;
       }
 
-      self.logger.info(logPrefix + ' Kiosk service restarted by user');
+      self.debugLog( ' Kiosk service restarted by user');
 
       // Wait for X to come back up, then re-apply settings
       setTimeout(() => {
@@ -1884,7 +1913,7 @@ display_configuration.prototype.generateDiagnostics = function() {
   proc.on('exit', (code) => {
     fs.closeSync(outFd);
     if (code === 0) {
-      self.logger.info(`${logPrefix} Diagnostics saved to ${diagnosticFile}`);
+      self.debugLog(` Diagnostics saved to ${diagnosticFile}`);
       self.commandRouter.pushToastMessage('success', 'Diagnostics Generated',
         `Report saved to ${diagnosticFile}`);
       defer.resolve();

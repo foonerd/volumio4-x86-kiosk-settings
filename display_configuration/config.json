@@ -42,5 +42,9 @@
     "brightness": {
         "type": "number",
         "value": 1
+    },
+    "debug_logging": {
+        "type": "boolean",
+        "value": true
     }
 }

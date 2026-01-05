@@ -44,6 +44,10 @@
     "XSCREEN_SAVER_SETTING": "Parametres Xscreensaver",
 
     "DEBUG_SECTION": "Diagnostics",
+    "DEBUG_LOGGING": "Journalisation de debogage",
+    "DEBUG_LOGGING_DOC": "Active la journalisation detaillee pour le depannage. Desactiver pour la production.",
+    "DEBUG_LOGGING_ENABLED": "Journalisation de debogage activee",
+    "DEBUG_LOGGING_DISABLED": "Journalisation de debogage desactivee",
     "RESTART_DISPLAY": "Redemarrer la session d'affichage",
     "RESTART_DISPLAY_DOC": "Redemarre le service d'affichage sans redemarrer. Utilisez ceci pour appliquer les parametres ou resoudre les problemes d'affichage.",
     "RESTARTING_DISPLAY": "Redemarrage de la session d'affichage...",
