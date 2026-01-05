@@ -307,10 +307,11 @@ display_configuration.prototype.detectConnectedScreen = function () {
    const self = this;
    const display = self.getDisplaynumber();
 
-   return new Promise((resolve, reject) => {
+   return new Promise((resolve) => {
       exec(`xrandr --display ${display} --query`, (error, stdout, stderr) => {
          if (error) {
-            return reject(`xrandr error: ${stderr || error.message}`);
+            self.logger.warn(logPrefix + ` xrandr query failed: ${stderr || error.message}`);
+            return resolve(null);
          }
 
          const lines = stdout.split("\n");
@@ -1088,39 +1089,51 @@ display_configuration.prototype.savescreensettings = function (data) {
 display_configuration.prototype.applyscreensettingsboot = async function () {
    const self = this;
 
-   // detect screen before using it
-   const screen = await this.detectConnectedScreen();
+   try {
+      // detect screen before using it
+      const screen = await this.detectConnectedScreen();
 
-   // Check if old panel_orientation is still in effect from previous config
-   await this.checkDrmOrientation(screen);
+      if (!screen) {
+         self.logger.warn(logPrefix + ' No screen detected or X server not accessible - skipping display settings');
+         return;
+      }
 
-   if (this.drmForcesOrientation) {
-      self.logger.warn(
-         logPrefix + ` Old panel_orientation detected in kernel cmdline. ` +
-         `Reboot required for proper xrandr rotation. Applying xrandr anyway (may double-rotate).`
-      );
+      // Check if old panel_orientation is still in effect from previous config
+      await this.checkDrmOrientation(screen);
+
+      if (this.drmForcesOrientation) {
+         self.logger.warn(
+            logPrefix + ` Old panel_orientation detected in kernel cmdline. ` +
+            `Reboot required for proper xrandr rotation. Applying xrandr anyway (may double-rotate).`
+         );
+      }
+      
+      // Always apply xrandr rotation (new config uses plymouth= not panel_orientation)
+      await this.applyRotation();
+      self.logger.info(logPrefix + ` Panel Rotation applied via xrandr`);
+
+      await this.applyTouchCorrection();
+      await this.applyPointerCorrection();
+      this.applyCursorSetting();
+      self.setBrightness();
+   } catch (err) {
+      self.logger.error(logPrefix + ' applyscreensettingsboot error: ' + (err && err.message ? err.message : err));
    }
-   
-   // Always apply xrandr rotation (new config uses plymouth= not panel_orientation)
-   await this.applyRotation();
-   self.logger.info(logPrefix + ` Panel Rotation applied via xrandr`);
-
-   await this.applyTouchCorrection();
-   await this.applyPointerCorrection();
-   this.applyCursorSetting();
-   self.setBrightness();
 };
 
 
 display_configuration.prototype.applyscreensettings = async function () {
    const self = this;
 
-   await this.applyRotation();
-   await this.applyTouchCorrection();
-   await this.applyPointerCorrection();
-   this.applyCursorSetting();
-   self.setBrightness();
-
+   try {
+      await this.applyRotation();
+      await this.applyTouchCorrection();
+      await this.applyPointerCorrection();
+      this.applyCursorSetting();
+      self.setBrightness();
+   } catch (err) {
+      self.logger.error(logPrefix + ' applyscreensettings error: ' + (err && err.message ? err.message : err));
+   }
 };
 
 
@@ -1128,10 +1141,11 @@ display_configuration.prototype.detectTouchscreen = function () {
    const self = this;
    const display = self.getDisplaynumber();
 
-   return new Promise((resolve, reject) => {
+   return new Promise((resolve) => {
       exec(`DISPLAY=${display} xinput list`, (error, stdout, stderr) => {
          if (error) {
-            return reject(`xinput error: ${stderr || error.message}`);
+            self.logger.warn(logPrefix + ` xinput list failed: ${stderr || error.message}`);
+            return resolve([]);
          }
 
          const lines = stdout.split("\n");
