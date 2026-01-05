@@ -44,6 +44,12 @@
     "XSCREEN_SAVER_SETTING": "Configuracion de Xscreensaver",
 
     "DEBUG_SECTION": "Diagnosticos",
+    "RESTART_DISPLAY": "Reiniciar sesion de pantalla",
+    "RESTART_DISPLAY_DOC": "Reinicia el servicio de pantalla sin reiniciar. Uselo para aplicar configuraciones o solucionar problemas de pantalla.",
+    "RESTARTING_DISPLAY": "Reiniciando sesion de pantalla...",
+    "RESTART_SUCCESS": "Sesion de pantalla reiniciada correctamente",
+    "RESTART_FAILED": "Error al reiniciar la sesion de pantalla",
+    "RESTART_PARTIAL": "Pantalla reiniciada pero servidor X no completamente accesible",
     "GENERATE_DIAG": "Generar informe de diagnostico",
     "GENERATE_DIAG_DOC": "Crea un informe de diagnostico para solucionar problemas de pantalla."
 }

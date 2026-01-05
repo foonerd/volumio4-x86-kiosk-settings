@@ -1727,6 +1727,52 @@ display_configuration.prototype.applyCursorSetting = function () {
    }
 };
 
+// Restart kiosk service to refresh X session - callable from UI
+display_configuration.prototype.restartKiosk = function() {
+   const self = this;
+   const defer = libQ.defer();
+
+   self.commandRouter.pushToastMessage('info', 
+      self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
+      self.commandRouter.getI18nString('TRANSLATE.RESTARTING_DISPLAY'));
+
+   exec('sudo systemctl restart volumio-kiosk.service', (err) => {
+      if (err) {
+         self.logger.error(logPrefix + ' Failed to restart kiosk: ' + err.message);
+         self.commandRouter.pushToastMessage('error',
+            self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
+            self.commandRouter.getI18nString('TRANSLATE.RESTART_FAILED'));
+         defer.reject(err);
+         return;
+      }
+
+      self.logger.info(logPrefix + ' Kiosk service restarted by user');
+
+      // Wait for X to come back up, then re-apply settings
+      setTimeout(() => {
+         self.fixXauthority();
+
+         setTimeout(() => {
+            self.testXAccess().then((accessible) => {
+               if (accessible) {
+                  self.applyscreensettingsboot();
+                  self.commandRouter.pushToastMessage('success',
+                     self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
+                     self.commandRouter.getI18nString('TRANSLATE.RESTART_SUCCESS'));
+               } else {
+                  self.commandRouter.pushToastMessage('warning',
+                     self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
+                     self.commandRouter.getI18nString('TRANSLATE.RESTART_PARTIAL'));
+               }
+               defer.resolve();
+            });
+         }, 3000);
+      }, 2000);
+   });
+
+   return defer.promise;
+};
+
 display_configuration.prototype.generateDiagnostics = function() {
   const self = this;
   const defer = libQ.defer();

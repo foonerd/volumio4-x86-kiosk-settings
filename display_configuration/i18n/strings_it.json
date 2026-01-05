@@ -44,6 +44,12 @@
     "XSCREEN_SAVER_SETTING": "Impostazioni Xscreensaver",
 
     "DEBUG_SECTION": "Diagnostica",
+    "RESTART_DISPLAY": "Riavvia sessione display",
+    "RESTART_DISPLAY_DOC": "Riavvia il servizio display senza riavviare. Usalo per applicare le impostazioni o risolvere problemi di visualizzazione.",
+    "RESTARTING_DISPLAY": "Riavvio della sessione display...",
+    "RESTART_SUCCESS": "Sessione display riavviata con successo",
+    "RESTART_FAILED": "Impossibile riavviare la sessione display",
+    "RESTART_PARTIAL": "Display riavviato ma server X non completamente accessibile",
     "GENERATE_DIAG": "Genera rapporto diagnostico",
     "GENERATE_DIAG_DOC": "Crea un rapporto diagnostico per la risoluzione dei problemi di visualizzazione."
 }

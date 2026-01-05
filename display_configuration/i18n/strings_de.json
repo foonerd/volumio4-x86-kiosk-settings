@@ -44,6 +44,12 @@
     "XSCREEN_SAVER_SETTING": "Xscreensaver-Einstellungen",
 
     "DEBUG_SECTION": "Diagnose",
+    "RESTART_DISPLAY": "Anzeigesitzung neu starten",
+    "RESTART_DISPLAY_DOC": "Startet den Anzeigedienst ohne Neustart neu. Verwenden Sie dies, um Einstellungen anzuwenden oder Anzeigeprobleme zu beheben.",
+    "RESTARTING_DISPLAY": "Anzeigesitzung wird neu gestartet...",
+    "RESTART_SUCCESS": "Anzeigesitzung erfolgreich neu gestartet",
+    "RESTART_FAILED": "Fehler beim Neustart der Anzeigesitzung",
+    "RESTART_PARTIAL": "Anzeige neu gestartet, aber X-Server nicht vollstaendig zugaenglich",
     "GENERATE_DIAG": "Diagnosebericht erstellen",
     "GENERATE_DIAG_DOC": "Erstellt einen Diagnosebericht zur Fehlerbehebung bei Anzeigeproblemen."
 }

@@ -44,6 +44,12 @@
     "XSCREEN_SAVER_SETTING": "Parametres Xscreensaver",
 
     "DEBUG_SECTION": "Diagnostics",
+    "RESTART_DISPLAY": "Redemarrer la session d'affichage",
+    "RESTART_DISPLAY_DOC": "Redemarre le service d'affichage sans redemarrer. Utilisez ceci pour appliquer les parametres ou resoudre les problemes d'affichage.",
+    "RESTARTING_DISPLAY": "Redemarrage de la session d'affichage...",
+    "RESTART_SUCCESS": "Session d'affichage redemarree avec succes",
+    "RESTART_FAILED": "Echec du redemarrage de la session d'affichage",
+    "RESTART_PARTIAL": "Affichage redemarre mais serveur X pas entierement accessible",
     "GENERATE_DIAG": "Generer un rapport de diagnostic",
     "GENERATE_DIAG_DOC": "Cree un rapport de diagnostic pour resoudre les problemes d'affichage."
 }
