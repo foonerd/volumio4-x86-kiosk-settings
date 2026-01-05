@@ -104,24 +104,87 @@ display_configuration.prototype.onStart = function () {
 
    // Wait for X server to be ready before applying settings
    self.waitForXServer().then(() => {
+      // Test if X is actually accessible
+      return self.testXAccess();
+   }).then((xAccessible) => {
+      if (!xAccessible) {
+         // X not accessible despite waiting - restart kiosk to get fresh X session
+         self.logger.info(logPrefix + ' X server not accessible, restarting kiosk service...');
+         return self.restartKioskAndWait();
+      }
+      return true;
+   }).then(() => {
       self.checkIfPlay();
       self.applyscreensettingsboot();
       self.monitorLid();
       // Re-apply input settings after kiosk browser starts
       self.waitForKioskAndReapply();
    }).catch((err) => {
-      self.logger.error(logPrefix + ' X server wait failed: ' + err.message);
-      // Fallback: try anyway after delay
-      setTimeout(() => {
-         self.checkIfPlay();
-         self.applyscreensettingsboot();
-         self.monitorLid();
-         self.waitForKioskAndReapply();
-      }, 5000);
+      self.logger.error(logPrefix + ' X server startup failed: ' + err.message);
+      // Continue anyway - settings will apply when X becomes available
+      self.checkIfPlay();
+      self.monitorLid();
+      self.waitForKioskAndReapply();
    });
 
    defer.resolve();
    return defer.promise;
+};
+
+// Test if X server is actually accessible (quick single check)
+display_configuration.prototype.testXAccess = function () {
+   const self = this;
+   const display = self.getDisplaynumber();
+
+   return new Promise((resolve) => {
+      exec(`DISPLAY=${display} xset q`, { timeout: 3000 }, (err) => {
+         resolve(!err);
+      });
+   });
+};
+
+// Restart kiosk service and wait for X to become accessible
+display_configuration.prototype.restartKioskAndWait = function () {
+   const self = this;
+
+   return new Promise((resolve) => {
+      exec('sudo systemctl restart volumio-kiosk.service', (err) => {
+         if (err) {
+            self.logger.warn(logPrefix + ' Failed to restart kiosk service: ' + err.message);
+            resolve(false);
+            return;
+         }
+
+         self.logger.info(logPrefix + ' Kiosk service restarted, waiting for X server...');
+
+         // Wait a moment for kiosk to start
+         setTimeout(() => {
+            // Re-copy Xauthority after kiosk restart
+            self.fixXauthority();
+
+            // Wait for X with shorter timeout since kiosk just started
+            let attempts = 0;
+            const maxAttempts = 15;
+
+            const checkX = () => {
+               attempts++;
+               self.testXAccess().then((accessible) => {
+                  if (accessible) {
+                     self.logger.info(logPrefix + ' X server accessible after kiosk restart');
+                     resolve(true);
+                  } else if (attempts >= maxAttempts) {
+                     self.logger.warn(logPrefix + ' X server still not accessible after kiosk restart');
+                     resolve(false);
+                  } else {
+                     setTimeout(checkX, 1000);
+                  }
+               });
+            };
+
+            checkX();
+         }, 2000);
+      });
+   });
 };
 
 display_configuration.prototype.onRestart = function () {
