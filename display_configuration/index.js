@@ -95,11 +95,59 @@ display_configuration.prototype.onStop = function () {
    return defer.promise;
 };
 
+// Load i18n translation strings
+display_configuration.prototype.loadI18nStrings = function () {
+   var self = this;
+   var lang_code = self.commandRouter.sharedVars.get('language_code') || 'en';
+   var langFile = __dirname + '/i18n/strings_' + lang_code + '.json';
+   var defaultFile = __dirname + '/i18n/strings_en.json';
+
+   // Always load English as fallback
+   try {
+      self.i18nStringsDefault = fs.readJsonSync(defaultFile);
+   } catch (e) {
+      self.logger.error(logPrefix + 'Failed to load English fallback strings');
+      self.i18nStringsDefault = {};
+   }
+
+   // Load requested language (or English if same)
+   if (lang_code === 'en') {
+      self.i18nStrings = self.i18nStringsDefault;
+   } else {
+      try {
+         self.i18nStrings = fs.readJsonSync(langFile);
+         self.logger.info(logPrefix + 'Loaded i18n strings for language: ' + lang_code);
+      } catch (e) {
+         self.logger.warn(logPrefix + 'Failed to load ' + lang_code + ' translations, using English');
+         self.i18nStrings = self.i18nStringsDefault;
+      }
+   }
+};
+
+// Get translated string by key
+display_configuration.prototype.getI18nString = function (key) {
+   var self = this;
+
+   // Try current language first
+   if (self.i18nStrings && self.i18nStrings[key]) {
+      return self.i18nStrings[key];
+   }
+
+   // Fallback to English
+   if (self.i18nStringsDefault && self.i18nStringsDefault[key]) {
+      return self.i18nStringsDefault[key];
+   }
+
+   // Last resort: return key itself
+   return key;
+};
+
 display_configuration.prototype.onStart = function () {
    const self = this;
    const defer = libQ.defer();
 
    self.socket = io.connect('http://localhost:3000');
+   self.loadI18nStrings();
    self.fixXauthority();
 
    // Wait for X server to be ready before applying settings
@@ -1733,15 +1781,15 @@ display_configuration.prototype.restartKiosk = function() {
    const defer = libQ.defer();
 
    self.commandRouter.pushToastMessage('info', 
-      self.commandRouter.getI18nString('PLUGIN_TITLE'),
-      self.commandRouter.getI18nString('RESTARTING_DISPLAY'));
+      self.getI18nString('PLUGIN_TITLE'),
+      self.getI18nString('RESTARTING_DISPLAY'));
 
    exec('sudo systemctl restart volumio-kiosk.service', (err) => {
       if (err) {
          self.logger.error(logPrefix + ' Failed to restart kiosk: ' + err.message);
          self.commandRouter.pushToastMessage('error',
-            self.commandRouter.getI18nString('PLUGIN_TITLE'),
-            self.commandRouter.getI18nString('RESTART_FAILED'));
+            self.getI18nString('PLUGIN_TITLE'),
+            self.getI18nString('RESTART_FAILED'));
          defer.reject(err);
          return;
       }
@@ -1757,12 +1805,12 @@ display_configuration.prototype.restartKiosk = function() {
                if (accessible) {
                   self.applyscreensettingsboot();
                   self.commandRouter.pushToastMessage('success',
-                     self.commandRouter.getI18nString('PLUGIN_TITLE'),
-                     self.commandRouter.getI18nString('RESTART_SUCCESS'));
+                     self.getI18nString('PLUGIN_TITLE'),
+                     self.getI18nString('RESTART_SUCCESS'));
                } else {
                   self.commandRouter.pushToastMessage('warning',
-                     self.commandRouter.getI18nString('PLUGIN_TITLE'),
-                     self.commandRouter.getI18nString('RESTART_PARTIAL'));
+                     self.getI18nString('PLUGIN_TITLE'),
+                     self.getI18nString('RESTART_PARTIAL'));
                }
                defer.resolve();
             });
