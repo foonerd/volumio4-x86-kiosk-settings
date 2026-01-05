@@ -44,6 +44,16 @@
     "XSCREEN_SAVER_SETTING": "Xscreensaver-instellingen",
 
     "DEBUG_SECTION": "Diagnostiek",
+    "DEBUG_LOGGING": "Debug-logboek",
+    "DEBUG_LOGGING_DOC": "Schakelt gedetailleerde logging in voor probleemoplossing. Uitschakelen voor productiegebruik.",
+    "DEBUG_LOGGING_ENABLED": "Debug-logboek ingeschakeld",
+    "DEBUG_LOGGING_DISABLED": "Debug-logboek uitgeschakeld",
+    "RESTART_DISPLAY": "Schermsessie herstarten",
+    "RESTART_DISPLAY_DOC": "Herstart de schermservice zonder opnieuw op te starten. Gebruik dit om instellingen toe te passen of schermproblemen op te lossen.",
+    "RESTARTING_DISPLAY": "Schermsessie wordt herstart...",
+    "RESTART_SUCCESS": "Schermsessie succesvol herstart",
+    "RESTART_FAILED": "Kan schermsessie niet herstarten",
+    "RESTART_PARTIAL": "Scherm herstart maar X-server niet volledig toegankelijk",
     "GENERATE_DIAG": "Genereer diagnostisch rapport",
     "GENERATE_DIAG_DOC": "Maakt een diagnostisch rapport voor het oplossen van schermproblemen."
 }

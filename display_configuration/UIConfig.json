@@ -333,6 +333,29 @@
       "label": "TRANSLATE.DEBUG_SECTION",
       "content": [
         {
+          "id": "debug_logging",
+          "element": "switch",
+          "label": "TRANSLATE.DEBUG_LOGGING",
+          "doc": "TRANSLATE.DEBUG_LOGGING_DOC",
+          "value": true,
+          "onClick": {
+            "type": "plugin",
+            "endpoint": "user_interface/display_configuration",
+            "method": "toggleDebugLogging"
+          }
+        },
+        {
+          "id": "restart_kiosk",
+          "element": "button",
+          "label": "TRANSLATE.RESTART_DISPLAY",
+          "doc": "TRANSLATE.RESTART_DISPLAY_DOC",
+          "onClick": {
+            "type": "plugin",
+            "endpoint": "user_interface/display_configuration",
+            "method": "restartKiosk"
+          }
+        },
+        {
           "id": "generate_diagnostics",
           "element": "button",
           "label": "TRANSLATE.GENERATE_DIAG",
