@@ -150,7 +150,7 @@ display_configuration.prototype.getI18nString = function (key) {
 display_configuration.prototype.debugLog = function (message) {
    var self = this;
    if (self.config.get('debug_logging')) {
-      self.debugLog( message);
+      self.logger.info(logPrefix + message);
    }
 };
 
