@@ -1733,15 +1733,15 @@ display_configuration.prototype.restartKiosk = function() {
    const defer = libQ.defer();
 
    self.commandRouter.pushToastMessage('info', 
-      self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
-      self.commandRouter.getI18nString('TRANSLATE.RESTARTING_DISPLAY'));
+      self.commandRouter.getI18nString('PLUGIN_TITLE'),
+      self.commandRouter.getI18nString('RESTARTING_DISPLAY'));
 
    exec('sudo systemctl restart volumio-kiosk.service', (err) => {
       if (err) {
          self.logger.error(logPrefix + ' Failed to restart kiosk: ' + err.message);
          self.commandRouter.pushToastMessage('error',
-            self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
-            self.commandRouter.getI18nString('TRANSLATE.RESTART_FAILED'));
+            self.commandRouter.getI18nString('PLUGIN_TITLE'),
+            self.commandRouter.getI18nString('RESTART_FAILED'));
          defer.reject(err);
          return;
       }
@@ -1757,12 +1757,12 @@ display_configuration.prototype.restartKiosk = function() {
                if (accessible) {
                   self.applyscreensettingsboot();
                   self.commandRouter.pushToastMessage('success',
-                     self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
-                     self.commandRouter.getI18nString('TRANSLATE.RESTART_SUCCESS'));
+                     self.commandRouter.getI18nString('PLUGIN_TITLE'),
+                     self.commandRouter.getI18nString('RESTART_SUCCESS'));
                } else {
                   self.commandRouter.pushToastMessage('warning',
-                     self.commandRouter.getI18nString('TRANSLATE.PLUGIN_TITLE'),
-                     self.commandRouter.getI18nString('TRANSLATE.RESTART_PARTIAL'));
+                     self.commandRouter.getI18nString('PLUGIN_TITLE'),
+                     self.commandRouter.getI18nString('RESTART_PARTIAL'));
                }
                defer.resolve();
             });
